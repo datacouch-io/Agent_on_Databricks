@@ -102,6 +102,8 @@ And the answer:
 
 > Regarding delivery timing for reference: your order is shipping to the **Nordics** region, and per our delivery policy **[DOC-003]**, standard delivery to the Nordics takes **5 to 7 working days**, since shipments are consolidated at our Hamburg hub before onward transport.
 
+![Both tools called in step 1, DOC-003 retrieved, and the answer citing the Nordics window](../artifacts/lab-2a/screenshots/01-two-sources.png)
+
 **What this means.** The word *"Nordics"* appears nowhere in the question. The agent got it by looking up `ORD-1044`, which joins to customer `CUST-003` (Helsinki Works), whose region is Nordics. It then retrieved the policy that has a Nordics-specific window. **Remove either source and the answer is impossible** — that is the test this lab exists to pass.
 
 > 💡 **Both tool calls came back in the same step.** The model asked for `get_order` *and* `search_policy` in one response. That is parallel tool calling, and it is why the answer took two model round-trips rather than three. You get it for free when the calls are independent; you do not get it when one call's arguments depend on the other's result.

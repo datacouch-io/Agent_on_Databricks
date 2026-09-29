@@ -78,6 +78,8 @@ retriever = RETRIEVERS[a.retrieval]()
 
 > Regarding delivery timing: for the Nordics region, standard delivery takes **5 to 7 working days**, since shipments are consolidated at the Hamburg hub before onward transport **[DOC-003]**.
 
+![The same question answered through the embeddings adapter, same Nordics window, same DOC-003 citation](../artifacts/lab-2b/screenshots/01-adapter-swapped.png)
+
 **What this means.** Same region, same window, same citation. `core.py` was not edited, recompiled or reconfigured. **That is the deliverable of this lab** — portability shown, not claimed.
 
 > ⚠️ **Gotcha — note what did *not* stay the same.** Adapter A returned `DOC-003, DOC-001, DOC-004`; adapter B returned `DOC-003, DOC-004, DOC-007`. Only rank 1 agrees. The answer survived because rank 1 was right in both cases and the model only needed that one. A question where the answer lived at rank 2 could have gone differently. **"The answer matched" is a weaker result than it looks.**
@@ -107,6 +109,8 @@ query: 'how much can I refund without asking anyone'   (audience=agent_only)
   keyword-tfidf            DOC-002(0.219), DOC-006(0.208)
   databricks-embeddings    DOC-006(0.668), DOC-002(0.491)
 ```
+
+![Ranked results side by side: rank 1 agrees on query one, but the keyword adapter puts a billing document first for the paraphrased returns question](../artifacts/lab-2b/screenshots/02-retriever-comparison.png)
 
 **Read the second query carefully.** *"Can I send it back after six weeks"* is a returns question. The correct document is **DOC-001, the returns and refunds policy**, which sets a 30-day window with a 60-day extension for seating.
 
