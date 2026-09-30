@@ -1,184 +1,231 @@
-# Lab 5B — MCP Discovery, and Testing the Boundary
+# Lab 5B — Two Identities, Two Tool Lists
 
-**Session 5 · Tools and Governance**
+**Session:** 5 — Tools and Governance
+**Duration:** ~45 minutes
+**Where you work:** a Databricks notebook
+**Compute:** Serverless
 
-> ✅ **Tested end-to-end** against the Databricks **managed MCP server**. The admin identity discovers **2 tools**; the restricted identity discovers **1**. And when the restricted identity calls the tool it was not granted, the error is not *"forbidden"* — it is **`Function not found`**. It cannot learn the tool exists.
-
-## What you'll learn
-
-- What MCP gives you that a hand-written tool list does not: **discovery**.
-- How Databricks exposes Unity Catalog functions as MCP tools with **zero extra configuration**.
-- Why a governed tool catalog is filtered **per identity**, and why that is stronger than filtering per request.
-- The difference between *denied* and *invisible*, and why the second is the better security posture.
-
-## What you'll do
-
-Query the managed MCP server as two identities, compare what each can see, then deliberately call a tool outside the restricted identity's scope and read exactly how it fails.
-
-## Time & cost
-
-- **Time:** ~30 minutes.
-- **Cost:** a serverless SQL warehouse.
+> **Verified on 2026-09-30.** Every tool list and error message below is from a real run.
 
 ---
 
-## Before you start
+## 1. Lab Overview & Objectives
 
-- **Prior labs:** [5A](lab-5a-governed-uc-function.md) — the functions, the service principal and the grants all come from there.
-- **Environment:**
+[Lab 5A](lab-5a-governed-uc-function.md) granted the agent's service principal `EXECUTE`
+on **one** function and nothing else.
+
+This lab asks the managed MCP server the same question as two different identities and
+compares the answers. The result is the most important governance idea in the course:
+**the tool list itself is filtered by your grants.**
+
+**By the end of this lab you will be able to:**
+
+1. Call a Databricks managed MCP server with `tools/list` and `tools/call`.
+2. Show that two identities asking the same server get **different tool lists**.
+3. Explain why the ungranted call fails with *"not found"* rather than *"denied"* — and
+   why that wording is the point.
+4. Argue for filtered discovery over a permission check at call time.
+
+---
+
+## 2. Files You Will Use
+
+| # | File | Where | What it does |
+|---|---|---|---|
+| 1 | **`Lab 5B - Two Identities`** | Workspace → `Agents-on-Databricks-Labs` | The lab. **13 cells** — 8 explaining, 5 to run. |
+| 2 | [`lab-5b-two-identities.ipynb`](../notebooks/lab-5b-two-identities.ipynb) | this repo, `notebooks/` | The same notebook with outputs saved. |
+
+**To open it:** **Workspace** → `Agents-on-Databricks-Labs` → **`Lab 5B - Two Identities`**,
+attach **Serverless**.
+
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
+---
+
+## 3. Prerequisites
+
+- [Lab 5A](lab-5a-governed-uc-function.md) — the function and the grants.
+- A **secret scope** called `agents-labs` holding the restricted principal's OAuth
+  credentials. Your instructor creates it:
+
   ```bash
-  export DATABRICKS_PROFILE=your-profile
-  export LAB_HOST=https://<your-workspace>.azuredatabricks.net
+  databricks secrets create-scope agents-labs
+  databricks secrets put-secret agents-labs restricted_client_id
+  databricks secrets put-secret agents-labs restricted_client_secret
   ```
 
 ---
 
-## The idea in 60 seconds
+## 4. What You're Building
 
-Hand-written tool lists have a quiet failure mode: the list and the permissions drift apart. You remove someone's access to a function and forget to remove the tool, so the model keeps trying to call something it will always be refused.
-
-MCP removes the second list. The server **is** the catalog, and it answers per caller.
-
-```mermaid
-flowchart TB
-    A["agent"] -->|"tools/list"| M["Databricks managed MCP<br/>/api/2.0/mcp/functions/{catalog}/{schema}"]
-    M -->|"reads"| UC["Unity Catalog<br/>functions + GRANTs"]
-    UC -->|"admin: 2 functions"| R1["2 tools"]
-    UC -->|"restricted: 1 function"| R2["1 tool"]
-    M --> R1
-    M --> R2
+```
+              /api/2.0/mcp/functions/agents_labs/retail
+                              │
+              ┌───────────────┴───────────────┐
+        your token                      SP token
+              │                               │
+        tools/list                      tools/list
+              │                               │
+   get_order_summary                 get_order_summary
+   revenue_by_region                        ⌀
+              │                               │
+        both callable            revenue_by_region → "not found"
 ```
 
 ---
 
-## Step 1 — Discover tools, as yourself
+## 5. Step-by-Step Instructions
 
-**Goal:** see UC functions become MCP tools with no extra work.
+### Step 1 — Discover as yourself (8 min)
 
-```bash
-curl -s -X POST "$LAB_HOST/api/2.0/mcp/functions/agents_labs/retail" \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
-```
-
-**What you should see** — the schema is generated from the function signature:
-
-```json
-{"name": "agents_labs__retail__get_order_summary",
- "description": "Look up one order: fulfilment status, item, units, revenue, and the
-                 region and loyalty tier of the customer who placed it. Use this
-                 whenever a question refers to a specific order reference.",
- "inputSchema": {"type": "object", "required": ["order_ref"],
-                 "properties": {"order_ref": {"type": "string",
-                   "description": "Customer-facing order reference, e.g. ORD-1044"}}},
- "annotations": {"catalog": "agents_labs", "schema": "retail",
-                 "routine_body": "SQL", "destructiveHint": true}}
-```
-
-**What this means.** The `COMMENT` you wrote in Lab 5A **is** the tool description. The parameter comment **is** the argument description. You did not write a tool schema; you wrote a function and documented it properly, and the schema is derived.
-
-> ⚠️ **Gotcha — `destructiveHint: true` on a read-only function.** Databricks annotates SQL routines conservatively. `get_order_summary` only reads, yet it is flagged as potentially destructive. If your client uses that hint to decide what needs human approval, **every** UC function will prompt. Decide approval from your own policy — as [Lab 1B](../session-1-agent-architecture/lab-1b-minimal-agent.md) does with `needs_human()` — not from a hint you do not control.
-
----
-
-## Step 2 — Discover as the restricted identity
-
-**Goal:** watch the catalog shrink.
-
-```bash
-python code/mcp_probe.py
-```
-
-![Two identities against the same MCP endpoint: the admin sees two tools, the restricted identity sees one](../artifacts/lab-5b/screenshots/01-mcp-discovery-filtered.png)
+Run **cells 1 and 2**.
 
 ```console
-=== as you — workspace admin ===
+  MCP server: https://…/api/2.0/mcp/functions/agents_labs/retail
+
+  as admin@…
   tools discovered: 2
     - agents_labs__retail__get_order_summary
     - agents_labs__retail__revenue_by_region
-
-=== as the agent's execution identity ===
-  tools discovered: 1
-    - agents_labs__retail__get_order_summary
 ```
 
-**What this means.** Same endpoint, same catalog, same schema — **different tool list**. The restricted identity was granted `EXECUTE` on one function in Lab 5A, so it sees one tool. Nobody maintained a per-agent allowlist; the UC grant *is* the allowlist.
+Every Unity Catalog function in the schema, exposed as an MCP tool with the schema
+[Lab 5A](lab-5a-governed-uc-function.md) showed you. Two JSON-RPC methods matter:
+`tools/list` and `tools/call`.
 
 ---
 
-## Step 3 — Call the tool you were not granted
+### Step 2 — Become the service principal (10 min)
 
-**Goal:** read the failure carefully, because the wording matters.
-
-The probe calls both tools as both identities:
+Run **cell 3**. It reads the SP's credentials from the secret scope and exchanges them for
+a short-lived token via OAuth M2M.
 
 ```console
-=== as you — workspace admin ===
-  CALL get_order_summary    -> OK      {"columns":["order_id","status","item",...
-  CALL revenue_by_region    -> OK      {"columns":["region","month","revenue",...
+  client_id : [REDACTED]
+  secret    : [REDACTED]
 
-=== as the agent's execution identity ===
-  CALL get_order_summary    -> OK      {"columns":["order_id","status","item",...
-  CALL revenue_by_region    -> ERROR   BAD_REQUEST: Function
-                                       'agents_labs.retail.revenue_by_region' not found
+  got an SP token, expires in 3600s
 ```
 
-**Read that last line again.** Not `PERMISSION_DENIED`. Not `403`. **`not found`.**
-
-**What this means.** For the restricted identity, the function does not exist. It cannot be listed, called, or inferred. Compare the two postures:
-
-| Response | What an attacker learns |
-|---|---|
-| `403 Forbidden` | the function exists, its exact name, and that access is worth pursuing |
-| `not found` | nothing |
-
-This is the harder and more valuable half of the session: the boundary is **proven enforced**, and enforced in the strongest available form. A configured-but-untested boundary is a hope.
-
-> 🚨 **Gotcha — `not found` is indistinguishable from a typo, which is a real operational cost.** When an agent reports *"function not found"*, the cause is either a genuinely missing function **or** a missing grant, and the error will not tell you which. Diagnose by listing tools as the *agent's* identity, not yours. Expect this to cost someone an afternoon at least once.
+> 💡 **Look at those two lines.** The notebook *asked* to print the client id and secret.
+> Databricks replaced both with `[REDACTED]` — `dbutils.secrets.get` taints the value, and
+> anything derived from it is redacted in every output, including ones you did not
+> anticipate.
+>
+> This is why credentials belong in a secret scope rather than a notebook cell: the
+> platform stops you leaking them **into the notebook's saved output**, which is where
+> they would otherwise live forever.
 
 ---
 
-## Step 4 — Why identity-filtered discovery beats request-time checks
+### Step 3 — Discover as it (7 min)
 
-**Goal:** understand what this design prevents.
+Run **cell 4**. Same server, same request, different bearer token.
 
-A common pattern is to give the model every tool and check permissions when it calls one. That fails in three ways this design avoids:
+```console
+  as the service principal
+  tools discovered: 1
+    - agents_labs__retail__get_order_summary
 
-1. **Wasted turns.** The model plans around a tool it can never use, calls it, gets refused, replans. Latency and tokens, every time.
-2. **Information leak.** The tool list is in the prompt. A model that can be talked into repeating its instructions has just disclosed your internal capability catalogue — precisely the risk [Lab 1B's](../session-1-agent-architecture/lab-1b-minimal-agent.md) injection test probes.
-3. **Drift.** Two sources of truth — the tool list and the grants — and nothing keeps them in step.
+  you see    : 2
+  it sees    : 1
+  invisible  : ['agents_labs__retail__revenue_by_region']
+```
 
-With MCP over UC, there is one source of truth and the model is never told about what it cannot use.
-
-> 💡 **The Session 5 summary, in one line.** [Lab 5A](lab-5a-governed-uc-function.md) showed `EXECUTE` on a function is not `SELECT` on its tables. Lab 5B shows the agent cannot even *see* what it was not granted. Together: **the agent's capabilities are defined by UC grants, not by your prompt** — and that is the only place they can be defined safely.
-
----
-
-## Step 5 — Clean up
-
-Nothing to remove. The MCP server is a workspace endpoint, not a resource you created.
+**The tool list is not a constant.** It is a view over Unity Catalog, computed per caller.
 
 ---
 
-## What you learned
+### Step 4 — Call the tool it was never granted (10 min)
+
+Run **cell 5**, and read the last line carefully.
+
+```console
+  as you:
+   get_order_summary   OK      {"is_truncated":false,"columns":["order_id","status", …
+   revenue_by_region   OK      {"is_truncated":false,"columns":["region","month", …
+
+  as the service principal:
+   get_order_summary   OK      {"is_truncated":false,"columns":["order_id","status", …
+   revenue_by_region   ERROR   {'code': -32602, 'message': "BAD_REQUEST: Function
+                               'agents_labs.retail.revenue_by_region' not found"}
+```
+
+> 🚨 **Not "permission denied". Not "forbidden". Not found.**
+>
+> To an identity without the grant, that function **does not exist**. Unity Catalog is not
+> refusing the call — it is answering honestly about a namespace that, for this principal,
+> contains one function.
+
+---
+
+### Step 5 — Why this beats a check at call time (10 min)
+
+Read **cell 6**. The usual design shows the agent every tool and checks permissions when it
+calls one. Compare:
+
+| | Check at call time | **Filtered discovery** |
+|---|---|---|
+| What the model sees | every tool | only its own |
+| Failure mode | tries, gets denied, retries, apologises | never considers it |
+| Prompt-injection surface | *"call the admin tool"* is attemptable | the tool is not in its context |
+| Leak | the tool's **name and description** disclose it exists | nothing |
+| Where the rule lives | your application code | **the grant** |
+
+> 🚨 **The tool list is context, and context leaks.** A tool named
+> `approve_refund_above_limit` tells a determined user something about your system even if
+> every call is refused. Filtered discovery means there is nothing to tell.
+
+> 💡 **Notice where the rule lives.** You wrote no permission code. The boundary is a
+> `GRANT`, inherited by **every** consumer of that schema — this notebook, an agent, a job,
+> a colleague's app.
+>
+> That is the same contrast as [Lab 4B](../session-4-genie/lab-4b-genie-in-an-agent.md):
+> the Genie Knowledge Store travelled to a new consumer because it lived with the agent,
+> while [Lab 3A](../session-3-grounding-and-rag/lab-3a-vector-search-index.md)'s
+> `audience` filter did **not**, because it lived in the caller — and
+> [Lab 7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md)
+> pays for that with a disclosed document.
+>
+> **A grant is the strongest version of that idea**: enforced by the platform, not by
+> anyone remembering.
+
+---
+
+### Step 6 — Try it (5 min)
+
+1. Grant the SP `EXECUTE` on `revenue_by_region`, re-run cell 4, watch the tool **appear**.
+   Revoke it and watch it vanish. **No redeploy, no restart.**
+2. Run `SELECT * FROM agents_labs.retail.orders` as the SP. It has no `SELECT` — yet
+   `get_order_summary` reads that table and works. Definer's rights.
+3. Look again at cell 3's output. Did the secret print?
+
+---
+
+## 6. What You Learned
 
 | You saw… | in Step | proof |
 |---|---|---|
-| UC functions become MCP tools with no configuration | 1 | schema generated from the signature |
-| Your `COMMENT` is the tool description | 1 | comment text appears verbatim in `description` |
-| `destructiveHint` is conservative and unreliable | 1 gotcha | `true` on a read-only function |
-| Tool discovery is filtered per identity | 2 | 2 tools vs 1, same endpoint |
-| The UC grant *is* the allowlist | 2 | no per-agent list was maintained |
-| Out-of-scope calls fail as **not found** | 3 | `BAD_REQUEST: … not found` |
-| Invisible is stronger than forbidden | 3 | a 403 confirms the target exists |
-| `not found` hides typos too | 3 gotcha | list tools as the agent to diagnose |
+| UC functions are MCP tools automatically | 1 | `tools/list` returns 2 |
+| Secrets are redacted from notebook output | 2 | `[REDACTED]` on a deliberate print |
+| Two identities get **different tool lists** | 3 | 2 vs 1 |
+| The ungranted tool is **invisible**, not forbidden | 4 | `Function … not found` |
+| Discovery is governed, not just execution | 4 | nothing to attempt |
+| The tool list is context, and context leaks | 5 | a name discloses a capability |
+| The rule lives in a grant, not in code | 5 | no permission code written |
+| Grants take effect without redeploying | 6 | revoke and re-run |
 
-## Evidence
+## 7. What You Hand In
 
-[`artifacts/lab-5b/evidence/lab-5b-mcp-access-control.txt`](../artifacts/lab-5b/evidence/lab-5b-mcp-access-control.txt) — both identities, discovery and invocation.
-Source: [`code/mcp_probe.py`](code/mcp_probe.py).
+Run experiment 1 and paste the tool list before and after. One `GRANT` changing what an
+agent can perceive — with no code change and no restart — is the shortest demonstration of
+governed tooling you will have.
 
 ---
 
-**Next:** [Lab 6A — Build an Evaluation Dataset and Get a Baseline](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md)
+**Next:** [Lab 6A — Build an Evaluation Dataset](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md)

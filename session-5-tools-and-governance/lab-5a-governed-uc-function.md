@@ -1,208 +1,207 @@
-# Lab 5A — Build a Governed Tool from a Unity Catalog Function
+# Lab 5A — The Function *Is* the Tool
 
-**Session 5 · Tools and Governance**
+**Session:** 5 — Tools and Governance
+**Duration:** ~45 minutes
+**Where you work:** a Databricks notebook
+**Compute:** Serverless
 
-> ✅ **Tested end-to-end.** A Unity Catalog function used as an agent tool, granted to a real service principal under least privilege. The identity **can call the function** and **cannot read the tables the function reads** — proven side by side in one probe.
-
-## What you'll learn
-
-- Why a UC function makes a better agent tool than hand-written SQL: **the signature is the schema and the `COMMENT` is the description**.
-- What "execution identity" means, and how to give an agent one.
-- The difference between **granting a function** and **granting the data behind it** — and why that gap is the whole point.
-- The two-layer permission model that trips everyone up: UC grants are necessary but **not sufficient**.
-
-## What you'll do
-
-Create a function, grant a service principal `EXECUTE` on it and nothing else, then run the same four statements as yourself and as that principal and compare.
-
-## Time & cost
-
-- **Time:** ~40 minutes.
-- **Cost:** a serverless SQL warehouse.
+> **Verified on 2026-09-30.** Every schema and grant below is from a real run.
 
 ---
 
-## Before you start
+## 1. Lab Overview & Objectives
 
-- **Permissions:** you need to create a service principal and grant UC privileges — account admin for the principal, `MANAGE` on the objects.
-- **Compute:** a serverless SQL warehouse.
-- **Data:** `agents_labs.retail`.
+Every tool so far has been three things kept in step by hand: a Python function, a JSON
+schema you typed, and a permission check you remembered.
+
+A **Unity Catalog function** collapses all three into one governed object. Its signature
+becomes the schema, its `COMMENT` becomes the description the model reads, and its
+`GRANT` becomes the access control.
+
+**By the end of this lab you will be able to:**
+
+1. Write a UC function whose `COMMENT` is written **for a model**, not for a colleague.
+2. Read back the tool schema Databricks generated from it, and point at where each field
+   came from.
+3. Grant `EXECUTE` while withholding `SELECT`, and explain why that works.
+4. Identify a service principal correctly when granting.
 
 ---
 
-## The idea in 60 seconds
+## 2. Files You Will Use
 
-An agent tool needs three things: a name, an input schema, and a description telling the model when to use it. A Unity Catalog function already has all three.
+| # | File | Where | What it does |
+|---|---|---|---|
+| 1 | **`Lab 5A - The Function Is the Tool`** | Workspace → `Agents-on-Databricks-Labs` | The lab. **12 cells** — 7 explaining, 5 to run. |
+| 2 | [`lab-5a-function-is-the-tool.ipynb`](../notebooks/lab-5a-function-is-the-tool.ipynb) | this repo, `notebooks/` | The same notebook with outputs saved. |
 
-```mermaid
-flowchart TB
-    F["CREATE FUNCTION get_order_summary(order_ref STRING)<br/>COMMENT 'Look up one order…'"]
-    F -->|"name"| N["tool name"]
-    F -->|"parameter + its COMMENT"| S["input schema"]
-    F -->|"function COMMENT"| D["tool description"]
-    F -->|"GRANT EXECUTE"| G["access control"]
-    N --> T["agent tool"]
-    S --> T
-    D --> T
-    G --> T
-    T -->|"runs as"| I["execution identity<br/>(service principal)"]
+**To open it:** **Workspace** → `Agents-on-Databricks-Labs` →
+**`Lab 5A - The Function Is the Tool`**, attach **Serverless**.
+
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
+---
+
+## 3. Prerequisites
+
+- `CREATE FUNCTION` and `SELECT` in `agents_labs.retail`.
+- A service principal named `agents-labs-restricted` — your instructor creates it.
+- Serverless compute.
+
+---
+
+## 4. What You're Building
+
+```
+  CREATE FUNCTION get_order_summary(
+      order_ref STRING COMMENT 'e.g. ORD-1044'   ─┐
+  )                                               │
+  COMMENT 'Look up one order: … Use this whenever ─┼─► the tool schema
+           a question refers to an order ref.'     │
+  RETURN SELECT … FROM orders JOIN customers       │
+                                                   │
+  GRANT EXECUTE ON FUNCTION … TO <app-id>  ────────┴─► the access control
+  (and NO grant on orders or customers)
 ```
 
-There is no separate tool registry to keep in sync. **The function is the tool.**
-
 ---
 
-## Step 1 — Write the function as a tool
+## 5. Step-by-Step Instructions
 
-**Goal:** make the comments carry their weight.
+### Step 1 — Write the COMMENT for a model (10 min)
+
+Run **cell 1** (the setup) and **cell 2** (the `%sql` `CREATE FUNCTION`).
+
+Read the `COMMENT` as if you were the model choosing a tool:
+
+> *"Look up one order: fulfilment status, item, units, revenue, and the region and loyalty
+> tier of the customer who placed it. **Use this whenever a question refers to a specific
+> order reference.**"*
+
+> 💡 **The second sentence is the one that earns its place.** The first says what the
+> function returns; the second says **when to reach for it**. Most function comments are
+> written for a colleague reading the catalog and stop after the first sentence — which
+> leaves the model guessing.
+
+The parameter has its own comment too, and it matters just as much:
 
 ```sql
-CREATE OR REPLACE FUNCTION agents_labs.retail.get_order_summary(
-  order_ref STRING COMMENT 'Customer-facing order reference, e.g. ORD-1044'
-)
-RETURNS TABLE (order_id STRING, status STRING, item STRING, units INT,
-               revenue DECIMAL(12,2), order_date DATE, region STRING, tier STRING)
-COMMENT 'Look up one order: fulfilment status, item, units, revenue, and the region
-         and loyalty tier of the customer who placed it. Use this whenever a question
-         refers to a specific order reference.'
-RETURN
-  SELECT o.order_id, o.status, o.item, o.units, o.revenue, o.order_date, c.region, c.tier
-  FROM agents_labs.retail.orders o
-  JOIN agents_labs.retail.customers c USING (customer_id)
-  WHERE o.order_id = order_ref;
+order_ref STRING COMMENT 'Customer-facing order reference, e.g. ORD-1044'
 ```
-
-**What this means.** Every comment has a job:
-
-- the **parameter** comment becomes the argument description the model reads — *"e.g. ORD-1044"* is what stops it passing `1044`
-- the **function** comment ends with *"Use this whenever…"*, which is routing guidance, not documentation
-
-> ⚠️ **Gotcha — a function with no `COMMENT` is a tool with no description.** It will still be exposed, and the model will be guessing from the name alone. Write the comment as if it were a tool description, because it is one.
-
-> 💡 **Note the second function.** `revenue_by_region(from_month)` returns aggregates and **no customer identifiers**. It exists to be *withheld* in Step 3 — a deliberately narrower capability the restricted identity is not granted.
 
 ---
 
-## Step 2 — Give the agent an identity
+### Step 2 — Confirm it is an ordinary SQL function (5 min)
 
-**Goal:** stop the agent running as you.
-
-```bash
-databricks account service-principals create --display-name "agents-labs-restricted"
-databricks account service-principal-secrets create <sp-id>
-databricks service-principals create --application-id <app-id> --display-name "agents-labs-restricted"
-```
-
-> ⚠️ **Gotcha — service principal secrets are an *account-level* operation.** `databricks service-principal-secrets` does not exist at workspace level; the CLI suggests `service-principal-secrets-proxy` instead, which is a different thing. Create the principal **and** its secret at the account, then register the same `application_id` in the workspace.
-
-> 🚨 **Gotcha — UC grants are necessary but not sufficient.** With every UC grant in place, the principal still failed:
->
-> ```
-> PermissionDenied: This API is disabled for users without the databricks-sql-access
-> or workspace-access or workspace-consume entitlements.
-> ```
->
-> **Workspace entitlements are a separate layer from Unity Catalog privileges.** Grant them explicitly:
-> ```python
-> w.service_principals.patch(id=sp_id, operations=[Patch(op=PatchOp.ADD, path="entitlements",
->     value=[{"value":"databricks-sql-access"}, {"value":"workspace-access"}])], ...)
-> ```
-> The CLI's `patch --json` rejected the same payload with `Error in decoding the request`; the SDK accepted it.
-
-The principal also needs `CAN_USE` on the warehouse. That is a third permission surface.
-
----
-
-## Step 3 — Grant the function, withhold the data
-
-**Goal:** the least-privilege grant, in three statements and two deliberate omissions.
+Run **cell 3**. Before it is a tool, it is something an analyst can call:
 
 ```sql
-GRANT USE CATALOG ON CATALOG agents_labs TO `<app-id>`;
-GRANT USE SCHEMA ON SCHEMA agents_labs.retail TO `<app-id>`;
-GRANT EXECUTE ON FUNCTION agents_labs.retail.get_order_summary TO `<app-id>`;
-
--- deliberately NOT granted:
---   SELECT ON TABLE agents_labs.retail.orders
---   SELECT ON TABLE agents_labs.retail.customers
---   EXECUTE ON FUNCTION agents_labs.retail.revenue_by_region
-```
-
-```console
-$ SHOW GRANTS ON FUNCTION agents_labs.retail.get_order_summary
-  a43d91d6-...  | EXECUTE | FUNCTION | agents_labs.retail.get_order_summary
+SELECT * FROM agents_labs.retail.get_order_summary('ORD-1044')
 ```
 
 ---
 
-## Step 4 — Prove the boundary
+### Step 3 — Read the schema Databricks generated (12 min)
 
-**Goal:** run the same four statements as two identities.
-
-```bash
-python code/privilege_probe.py
-```
-
-![The same four statements run as admin and as the restricted identity, with three denials](../artifacts/lab-5a/screenshots/01-least-privilege-probe.png)
+Run **cell 4**. It asks the managed MCP server what tools exist.
 
 ```console
-=== as you — workspace admin ===
-  identity: Bhavuk Chawla
-  ALLOWED  call the granted function                  (1 row(s))
-  ALLOWED  read the table the function reads          (2 row(s))
-  ALLOWED  read the customers table                   (2 row(s))
-  ALLOWED  call a function that was NOT granted       (2 row(s))
+  tools discovered as admin@…: 2
+    agents_labs__retail__get_order_summary
+    agents_labs__retail__revenue_by_region
 
-=== as the agent's execution identity ===
-  identity: agents-labs-restricted
-  ALLOWED  call the granted function                  (1 row(s))
-  DENIED   read the table the function reads          [INSUFFICIENT_PERMISSIONS]
-  DENIED   read the customers table                   [INSUFFICIENT_PERMISSIONS]
-  DENIED   call a function that was NOT granted       [INSUFFICIENT_PERMISSIONS]
+  the generated schema:
+{
+  "name": "agents_labs__retail__get_order_summary",
+  "description": "Look up one order: fulfilment status, item, units, revenue, and the
+                  region and loyalty tier of the customer who placed it. Use this
+                  whenever a question refers to a specific order reference.",
+  "inputSchema": {
+    "type": "object",
+    "required": ["order_ref"],
+    "properties": {
+      "order_ref": {
+        "type": "string",
+        "description": "Customer-facing order reference, e.g. ORD-1044"
+      }
+    }
+  },
+  "outputSchema": { … }
+}
 ```
 
-**What this means, and it is the point of the whole session.** The restricted identity **successfully called a function that reads two tables it cannot read**. Unity Catalog functions run with the **definer's** rights over the tables they touch, so the function is a controlled aperture: it returns one order, joined and shaped the way you decided, and nothing else.
+**You did not write a line of that.** Compare it with the hand-typed schemas in
+[Lab 1B](../session-1-agent-architecture/lab-1b-minimal-agent.md) cell 4:
 
-Compare the two ways an agent could answer *"what's the status of ORD-1044?"*:
-
-| | Reach |
+| In the tool schema | Came from |
 |---|---|
-| `SELECT … FROM orders JOIN customers` with `SELECT` granted | **every row of both tables**, forever |
-| `get_order_summary('ORD-1044')` with `EXECUTE` granted | **one order**, with the columns you chose |
+| `description` | the function's **`COMMENT`** |
+| `properties.order_ref.description` | the **parameter's** `COMMENT` |
+| `required: ["order_ref"]` | the parameter having no default |
+| `inputSchema.type` | the SQL types |
 
-The agent only ever needed the second. Granting the first because it was easier is how an agent ends up able to exfiltrate a customer list.
-
-> ⚠️ **Gotcha — the admin run is not a control, it is a warning.** Every line says ALLOWED because you are an admin. **Develop as the restricted identity**, or you will ship an agent that works in your hands and fails in production. Run this probe *before* wiring the tool into an agent, not after.
+> 💡 **This is the practical argument for `COMMENT ON`.** An undocumented function makes a
+> tool the model cannot choose correctly, and the fix is a comment, not a longer system
+> prompt. The same comment also improves Catalog Explorer, Genie
+> ([Lab 4A](../session-4-genie/lab-4a-genie-space.md)) and every analyst who reads the
+> schema. **You write it once and four consumers get better.**
 
 ---
 
-## Step 5 — Clean up
+### Step 4 — Least privilege in two statements (12 min)
 
-```bash
-# the principal and its grants are removed with the catalog at course end;
-# to remove just this identity:
-databricks account service-principals delete <sp-id>
+Run **cell 5**.
+
+```console
+  principals named 'agents-labs-restricted': 2
+  granting to application_id: a43d91d6-5848-46f7-99d6-70737fd76451
+
+  granted USE CATALOG, USE SCHEMA, EXECUTE to a43d91d6-…
+  deliberately NOT granted: SELECT on orders, SELECT on customers
+
+  FUNCTION get_order_summary    -> ['EXECUTE']
+  TABLE    orders               -> no grants to the SP
 ```
 
+**The agent can run the function and cannot read the tables it reads.** That is possible
+because a UC function executes with **definer's rights** — as its owner, not its caller.
+
+> ⚠️ **Grant to the application ID, not the display name.**
+>
+> The first version of this cell used `TO \`agents-labs-restricted\`` and failed:
+>
+> ```
+> PRINCIPAL_DOES_NOT_EXIST: Could not find principal with name agents-labs-restricted
+> ```
+>
+> Unity Catalog identifies a service principal by its **application ID** (a UUID). And
+> note the first line of the output: this workspace has **two** principals with that
+> display name — exactly the situation where granting by name would be ambiguous even if
+> it worked.
+
 ---
 
-## What you learned
+## 6. What You Learned
 
 | You saw… | in Step | proof |
 |---|---|---|
-| A UC function supplies name, schema and description | 1 | parameter and function `COMMENT`s |
-| A function without a comment is a tool without a description | 1 gotcha | the model guesses from the name |
-| SP secrets are account-level, not workspace-level | 2 gotcha | CLI has no workspace command |
-| UC grants alone are not enough | 2 gotcha | `databricks-sql-access` entitlement required |
-| EXECUTE on a function ≠ SELECT on its tables | 4 | function ALLOWED, both tables DENIED |
-| UC functions run with definer's rights | 4 | reads tables the caller cannot read |
-| Developing as admin hides every boundary | 4 gotcha | admin run is ALLOWED four times |
+| The `COMMENT` becomes the tool description | 3 | identical text in the schema |
+| The parameter `COMMENT` becomes its description | 3 | `e.g. ORD-1044` |
+| The schema is generated, not written | 3 | nothing typed in the notebook |
+| One comment improves four consumers | 3 | agent, Catalog Explorer, Genie, analysts |
+| `EXECUTE` without `SELECT` is coherent | 4 | definer's rights |
+| Grants use the application ID | 4 gotcha | `PRINCIPAL_DOES_NOT_EXIST` |
+| Display names are not unique | 4 | **2** principals share one name |
 
-## Evidence
+## 7. What You Hand In
 
-[`artifacts/lab-5a/evidence/lab-5a-least-privilege.txt`](../artifacts/lab-5a/evidence/lab-5a-least-privilege.txt)
-Source: [`code/privilege_probe.py`](code/privilege_probe.py), [`tools/setup/05_uc_functions.sql`](../tools/setup/05_uc_functions.sql), [`tools/setup/06_least_privilege.sql`](../tools/setup/06_least_privilege.sql).
+Nothing. [Lab 5B](lab-5b-mcp-and-access-control.md) uses these grants directly.
 
 ---
 
-**Next:** [Lab 5B — MCP Discovery, and Testing the Boundary](lab-5b-mcp-and-access-control.md)
+**Next:** [Lab 5B — Two Identities, Two Tool Lists](lab-5b-mcp-and-access-control.md)
