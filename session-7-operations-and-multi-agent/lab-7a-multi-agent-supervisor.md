@@ -265,4 +265,4 @@ Source: [`code/supervisor.py`](code/supervisor.py), [`code/isolation_probe.py`](
 
 ---
 
-**Next:** [Lab 7B — Agent Bricks, Versioning and Safe Rollout](lab-7b-agent-bricks-and-rollout.md)
+**Next:** [Lab 7B — Agent Bricks, Versioning and Safe Rollout](lab-7b-rollout-and-agent-bricks.md)

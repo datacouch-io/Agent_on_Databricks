@@ -13,7 +13,7 @@ That resource group contains:
 
 | Resource | Name |
 |---|---|
-| Databricks workspace (trial SKU) | `dbx-agents-labs` |
+| Databricks workspace (**premium** SKU, upgraded from trial) | `dbx-agents-labs` |
 | Managed resource group | `databricks-rg-dbx-agents-labs-1p1zpq0e4cjuy` |
 | ADLS Gen2 storage account | `stagentslabs1588` |
 | Databricks access connector | `ac-agents-labs` |
@@ -56,6 +56,14 @@ group either. Delete them before the workspace goes:
 # keep the workspace
 databricks vector-search-endpoints delete-endpoint agents-labs-vs -p agents-labs
 
+# Agent serving endpoint from Lab 6B Step 5 — billed, scale-to-zero or not
+databricks agents delete-deployment agents_labs.retail.support_agent -p agents-labs
+
+# Agent Bricks Knowledge Assistant from Lab 7B Step 5 — delete from the UI:
+#   Agents -> retail-policy-assistant -> ... -> Delete
+#   id b233b9d0-a43d-4911-a392-b8da74d7085c
+# It also creates its own serving endpoint; deleting the agent removes it.
+
 # Genie space and SQL warehouse (workspace objects)
 #   Genie space   01f1bc6b0a4f1c6d8269cc9c1ec2af08   — delete from the UI
 databricks warehouses delete c8729519c456cb8e -p agents-labs
@@ -69,9 +77,15 @@ MLflow experiments under `/Users/<you>/agents-labs-*` are workspace files and
 go with the workspace. If you keep the workspace, remove them from the UI:
 `agents-labs-3b`, `-6-deploy`, `-7a`, `-7b`, `-capstone`, `-capstone-models`.
 
-> ⚠️ **The Vector Search endpoint is the one object that keeps costing money
-> after you stop using the course.** It is not in the resource group and not in
-> the catalog, so both of the "one command removes everything" steps miss it.
+> ⚠️ **Three objects keep costing money after you stop using the course**, and
+> none of them is in the resource group or in the catalog, so both of the "one
+> command removes everything" steps miss all three: the **Vector Search
+> endpoint**, the **agent serving endpoint**, and the **Agent Bricks agent**.
+
+> ⚠️ **The workspace is on the Premium SKU.** It was upgraded from trial to
+> complete Lab 6B Step 5 and Lab 7B Step 5. Azure does not allow premium →
+> trial, so the only way to stop Premium-rate charges is to delete the
+> workspace.
 
 ## Local
 
@@ -85,7 +99,7 @@ rm -rf "/Users/hadez/Documents/Company/training content/Agent_on_Databricks/.ven
 
 ## Order
 
-1. Vector Search endpoint (it is billed, and nothing else deletes it).
+1. Agent Bricks agent, agent serving endpoint, Vector Search endpoint — all billed, and nothing else deletes them.
 2. UC objects — catalog, external location, storage credential.
 3. Metastore assignment.
 4. The Azure resource group.

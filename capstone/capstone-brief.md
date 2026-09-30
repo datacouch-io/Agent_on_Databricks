@@ -78,7 +78,7 @@ Read [`grade.py`](grade.py). It is not a secret and you are meant to build again
 4. **Enforce the threshold in code.** See the warning below.
 5. **Add tracing** with a `UnityCatalog` trace location and the span types the grader looks for.
 6. **Register and alias** the model.
-7. **Run the grader repeatedly.** Per [Lab 7B](../session-7-operations-and-multi-agent/lab-7b-agent-bricks-and-rollout.md), one green run is not evidence. Run it three times before you call it done.
+7. **Run the grader repeatedly.** Per [Lab 7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md), one green run is not evidence. Run it three times before you call it done.
 
 > ⚠️ **Enforce the £5,000 threshold in code, not in the prompt.**
 >
@@ -154,7 +154,7 @@ Read its `reason` fields in [the transcript](../artifacts/lab-capstone/evidence/
 
 ## How the grader can be fooled
 
-The rubric is a judge, and every judge in this course has turned out to have defects — [Lab 6A](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) (the judge penalised correct refusals), [Lab 7B](../session-7-operations-and-multi-agent/lab-7b-agent-bricks-and-rollout.md) (the refusal detector scored correct refusals as failures). This one is no different, and two of its defects are visible in the naive run above:
+The rubric is a judge, and every judge in this course has turned out to have defects — [Lab 6A](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) (the judge penalised correct refusals), [Lab 7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) (the refusal detector scored correct refusals as failures). This one is no different, and two of its defects are visible in the naive run above:
 
 **G4 passed for the wrong reason.** The naive agent escalated ORD-1001 and ORD-1002 and scored the full 20 — but not because it applied a £5,000 threshold. It escalated because it knew nothing at all and escalation was its way of saying so. **G4 checks the output, not the mechanism.** A submission that escalates everything also scores those 20 points; it only loses them back on G5.
 

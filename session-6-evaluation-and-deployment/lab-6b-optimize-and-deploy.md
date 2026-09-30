@@ -2,14 +2,14 @@
 
 **Session 6 · Evaluation, Optimization and Deployment**
 
-> ⚠️ **Tested end-to-end except the final endpoint.** The optimization, the re-evaluation, the UC registration and a load-and-predict against the registered model are all real and shown below. **Model Serving deployment is blocked on a trial workspace** — the exact error is in Step 5, along with what changes on a Premium workspace.
+> ✅ **Tested end-to-end, including the live endpoint.** The optimization, the re-evaluation, the UC registration, the deployment and real HTTP queries against the running endpoint are all shown below. The workspace began as a trial — where serving is refused — and was upgraded to Premium to complete Steps 5 and 6. Both the refusal and the working deployment are included.
 
 ## What you'll learn
 
 - How to run a **measured** improvement cycle rather than a hopeful one.
 - Why the first tuning attempt appeared to make the agent worse — and why **segmenting the metric reversed that conclusion**.
 - That an aggregate retrieval metric over a dataset containing negative cases is close to meaningless.
-- How to package an agent as a `ResponsesAgent`, register it in Unity Catalog, and what deployment requires.
+- How to package an agent as a `ResponsesAgent`, register it in Unity Catalog, deploy it to Model Serving, and query it over HTTP.
 
 ## What you'll do
 
@@ -185,36 +185,86 @@ $ mlflow.pyfunc.load_model("models:/agents_labs.retail.support_agent/2").predict
 
 ### The deployment itself
 
-![Registration succeeds; deployment is refused on a trial workspace](../artifacts/lab-6b/screenshots/03-serving-blocked-on-trial.png)
-
-```console
-$ databricks agents deploy agents_labs.retail.support_agent 2
-
-  NotFound: Model serving is not available for trial workspaces.
-            Please contact your organization admin or Databricks support.
+```bash
+databricks agents deploy agents_labs.retail.support_agent 2 --scale-to-zero
 ```
 
-> 🚨 **Model Serving requires Premium.** A trial workspace can do everything else in this course — Vector Search, Genie, MCP, Unity Catalog, MLflow evaluation, model registration — but **not** serving. If you are running this on a trial workspace, Steps 1–4 and registration all work, and this last step will not. On Premium the same command returns an endpoint name and you then query it:
+```console
+  Deployment of agents_labs.retail.support_agent version 2 initiated.
+  This can take up to 15 minutes and the Review App & Query Endpoint will not
+  work until this deployment finishes.
+
+  endpoint   agents_agents_labs-retail-support_agent
+  query url  .../serving-endpoints/agents_agents_labs-retail-support_agent/
+             served-models/agents_labs-retail-support_agent_2/invocations
+```
+
+It took about 5 minutes to reach `READY`. Poll rather than guess:
+
+```python
+e = w.serving_endpoints.get("agents_agents_labs-retail-support_agent")
+print(e.state.ready, e.state.config_update)
+# EndpointStateReady.READY EndpointStateConfigUpdate.NOT_UPDATING
+```
+
+> ⚠️ **Gotcha — that enum does not start with `READY`.** It prints as `EndpointStateReady.READY`, so a polling loop written as `case "$s" in READY*)` never matches and spins until it times out. Compare against the enum, or match on the substring.
+
+### Query it
+
+```bash
+python session-6-evaluation-and-deployment/code/query_endpoint.py
+```
+
+![The deployed agent answering over HTTP, with a correct citation and a correct refusal](../artifacts/lab-6b/screenshots/04-endpoint-live.png)
+
+```console
+  endpoint  agents_agents_labs-retail-support_agent
+
+  Q: How long do I have to return a task chair?
+  (6.8s)
+  Task chairs are seating products, so you have **60 days** from delivery to return
+  them for a full refund, provided the chair is unused and in its original
+  packaging [DOC-001].
+
+  Q: What is the refund approval limit before a manager has to sign off?
+  (6.0s)
+  The policy excerpts provided don't mention a refund approval limit or manager
+  sign-off requirement, so I can't answer this question based on the available
+  documentation.
+```
+
+**Two things to take from this.**
+
+**The caller got simpler.** Look at [`query_endpoint.py`](code/query_endpoint.py): no vector-search client, no OpenAI client, no Databricks SDK doing retrieval. One authenticated `POST`. The endpoint holds the credentials for the chat model, the index and the UC function — which is precisely what the `resources` list at log time bought you.
+
+**It got faster.** 6.8s and 6.0s, against roughly 10–25s for the same agent running locally in earlier steps. The endpoint keeps its clients warm; your laptop was rebuilding a vector-search client on every call. Do not read this as "serving makes agents fast" — it means local timings are a poor latency baseline.
+
+> ⚠️ **Model Serving requires Premium.** A trial workspace can do everything else in this course — Vector Search, Genie, MCP, Unity Catalog, MLflow evaluation, and model **registration** — but not serving. The refusal is explicit:
 >
-> ```bash
-> databricks agents deploy agents_labs.retail.support_agent 2 --scale-to-zero
-> curl -X POST "$LAB_HOST/serving-endpoints/<endpoint>/invocations" \
->   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
->   -d '{"input":[{"role":"user","content":"How long does delivery to the Nordics take?"}]}'
+> ```console
+> NotFound: Model serving is not available for trial workspaces.
+>           Please contact your organization admin or Databricks support.
 > ```
 >
-> **Confirm your workspace SKU before you plan a session around this step.** It is the one part of this course that a trial cannot run.
+> ![The same deployment refused before the workspace was upgraded](../artifacts/lab-6b/screenshots/03-serving-blocked-on-trial.png)
+>
+> This course was built on a trial and the workspace was upgraded to Premium specifically to complete this step. Azure allows **trial → premium only**; there is no way back. **Confirm your SKU before planning a session around Steps 5 and 6.**
+
+> 💡 **Scale-to-zero is not free of consequences.** `--scale-to-zero` stops the endpoint billing when idle, at the cost of a cold start on the next request. For a classroom that is the right trade; for a latency-sensitive production agent it is not.
 
 ---
 
 ## Step 6 — Clean up
 
+The endpoint is the one object here that bills while it exists, even with scale-to-zero, and it is **not** removed by dropping the catalog:
+
 ```bash
-# if you did deploy on Premium
 databricks agents delete-deployment agents_labs.retail.support_agent
+# or, equivalently
+databricks serving-endpoints delete agents_agents_labs-retail-support_agent
 ```
 
-The registered model is removed with the catalog at course end.
+The registered model and its aliases go with the catalog at course end. See [`TEARDOWN.md`](../TEARDOWN.md).
 
 ---
 
@@ -232,11 +282,17 @@ The registered model is removed with the catalog at course end.
 | `resources` are what make serving credentials work | 5 | endpoint, index and function declared |
 | UC registration needs `mlflow[databricks]` | 5 gotcha | fails after building the model |
 | Model Serving is Premium-only | 5 | `not available for trial workspaces` |
+| The deployed endpoint answers correctly over HTTP | 5 | `[DOC-001]` cited, ungrounded question refused |
+| The caller loses every client library | 5 | one authenticated `POST` |
+| Local timings are a poor latency baseline | 5 | ~6s served vs 10–25s local |
+| The readiness enum is not the string `READY` | 5 gotcha | `EndpointStateReady.READY` |
 
 ## Evidence
 
 [`artifacts/lab-6b/evidence/lab-6a-baseline-and-comparison.txt`](../artifacts/lab-6b/evidence/lab-6a-baseline-and-comparison.txt) — both runs, the segmented comparison, latency, and the deployment attempt.
-Source: [`code/compare_variants.py`](code/compare_variants.py), [`code/deploy_agent.py`](code/deploy_agent.py), [`code/serving_agent.py`](code/serving_agent.py).
+- [`artifacts/lab-6b/evidence/04-endpoint-query.txt`](../artifacts/lab-6b/evidence/04-endpoint-query.txt) — both HTTP queries against the live endpoint.
+
+Source: [`code/compare_variants.py`](code/compare_variants.py), [`code/deploy_agent.py`](code/deploy_agent.py), [`code/serving_agent.py`](code/serving_agent.py), [`code/query_endpoint.py`](code/query_endpoint.py).
 
 ---
 

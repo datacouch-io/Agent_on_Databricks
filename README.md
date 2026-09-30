@@ -2,7 +2,9 @@
 
 Fifteen hands-on labs for a seven-session course on building, governing, evaluating and operating AI agents on Databricks, plus a graded offline capstone.
 
-Every lab in this repository was **built and run against a live Azure Databricks workspace**. Each transcript in a lab document is real output, each screenshot is a real terminal, and each gotcha box records something that actually broke during the build. Where a step could not be completed — Model Serving and Agent Bricks both require a non-trial workspace — the lab says so and shows the error rather than describing a step that was never run.
+Every lab in this repository was **built and run against a live Azure Databricks workspace**. Each transcript in a lab document is real output, each screenshot is a real terminal or a real console page, and each gotcha box records something that actually broke during the build.
+
+The workspace began as a **trial** and was upgraded to **Premium** to finish the two steps a trial refuses — Model Serving deployment (Lab 6B Step 5) and Agent Bricks (Lab 7B Step 5). Both labs show the trial refusal *and* the working result, because which one you hit depends on your own SKU.
 
 ## Course map
 
@@ -19,9 +21,9 @@ Every lab in this repository was **built and run against a live Azure Databricks
 | **5 · Tools and governance** | [5A — A Governed UC Function](session-5-tools-and-governance/lab-5a-governed-uc-function.md) | The function *is* the tool: signature as schema, `COMMENT` as description, `GRANT` as access control. | ✅ live |
 | | [5B — MCP and Access Control](session-5-tools-and-governance/lab-5b-mcp-and-access-control.md) | Identity-filtered tool discovery; two identities, two tool lists. | ✅ live |
 | **6 · Evaluation and deployment** | [6A — An Evaluation Dataset](session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) | A baseline — and the discovery that **both guideline failures were judge defects**. | ✅ live |
-| | [6B — Optimize and Deploy](session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) | Segmenting a metric **reversed** the conclusion that tuning made things worse. | ✅ live · serving blocked on trial |
+| | [6B — Optimize and Deploy](session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) | Segmenting a metric **reversed** the conclusion that tuning made things worse. Deployed and queried over HTTP. | ✅ live |
 | **7 · Operations and multi-agent** | [7A — A Supervisor and Two Workers](session-7-operations-and-multi-agent/lab-7a-multi-agent-supervisor.md) | State passing; a context-starved worker answers confidently instead of refusing. | ✅ live |
-| | [7B — Canaries and Rollback](session-7-operations-and-multi-agent/lab-7b-agent-bricks-and-rollout.md) | A regression that reproduces **2 times in 3**; alias-based rollback. | ✅ live · Agent Bricks is reference only |
+| | [7B — Canaries, Rollback and Agent Bricks](session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) | A regression that reproduces **2 times in 3**; alias-based rollback; a no-code brick **disclosing an internal document** the hand-built agent refuses. | ✅ live |
 | **Capstone** | [Returns Adjudication Agent](capstone/capstone-brief.md) | Independent build, graded by script. Grader verified at 100/100 and 30/100. | ✅ live |
 
 ## The thread through the labs
@@ -33,8 +35,13 @@ The labs are not independent exercises. Each one answers a question the previous
 - **6B** tunes it, and finds the aggregate metric misleading.
 - **1A** asks as a design exercise why Nordics revenue dropped. **4A** answers it from the data — Genie independently found Nordic Office Group's seating orders going £16,500 → £0.
 - **7A**'s supervisor needs two delegations to reach the DOC-007 fit-out exception. The **capstone** grader awards points for retrieval good enough to surface it in one.
+- **3A** filters retrieval to `audience: customer`. **7B** points a no-code Agent Bricks assistant at that same index and it discloses `DOC-006`, an `agent_only` document — because the filter lived in the caller, not in a grant.
 
-Three separate labs end up teaching the same lesson from different directions: **the judge is usually the thing that is broken.** Lab 6A's scorer penalised correct refusals; Lab 7B's refusal detector scored correct refusals as failures; the capstone rubric awards a toolless agent full marks on the approval gate for escalating out of ignorance. All three are documented as defects rather than smoothed over.
+Two lessons arrive repeatedly, from different directions.
+
+**The judge is usually the thing that is broken.** Lab 6A's scorer penalised correct refusals; Lab 7B's refusal detector scored correct refusals as failures; the capstone rubric awards a toolless agent full marks on the approval gate for escalating out of ignorance. All three are documented as defects rather than smoothed over.
+
+**A control that lives in application code is a convention.** Lab 5B puts tool access in Unity Catalog grants, where a new consumer inherits it. Lab 3A puts document access in a query-time filter, where a new consumer does not — and Lab 7B is that new consumer, disclosing an internal refund threshold nobody intended to publish.
 
 ## Repository layout
 
@@ -65,7 +72,7 @@ The labs need: a Unity Catalog catalog, a SQL warehouse, a Vector Search endpoin
 
 - Unity Catalog **Default Storage blocks `CREATE CATALOG` from SQL**. You need an ADLS Gen2 container, an access connector with a system-assigned managed identity, `Storage Blob Data Contributor`, a storage credential and an external location, then `CREATE CATALOG … MANAGED LOCATION`. RBAC takes about a minute to propagate.
 - `databricks-agents` **will not build on Python 3.14** (`whenever` has no wheel). Use 3.11 or 3.12. The failure is silent: scorers return `No module named 'databricks.agents'` buried in per-trace assessments.
-- **Model Serving is unavailable on trial workspaces.** Labs 1A–7A and the capstone run fully on a trial; 6B Step 5 and 7B Step 5 need Premium.
+- **Model Serving and Agent Bricks are unavailable on trial workspaces.** Labs 1A–7A and the capstone run fully on a trial; **6B Step 5 and 7B Step 5 need Premium or Enterprise**. Azure allows trial → premium only, never the reverse.
 
 ```bash
 python -m venv .venv312 --python=python3.12
@@ -85,7 +92,7 @@ export LAB_GENIE_SPACE=<genie space id>
 
 - **Per session:** two labs, 45–55 minutes each, sized for a 2-hour session with discussion.
 - **Capstone:** ~4 hours offline, self-graded by `capstone/grade.py`, 80/100 to pass.
-- **Cost:** the whole course is Foundation Model API calls, one Vector Search endpoint and one small SQL warehouse. No GPU.
+- **Cost:** the whole course is Foundation Model API calls, one Vector Search endpoint and one small SQL warehouse. No GPU. Steps 6B-5 and 7B-5 add a serving endpoint and an Agent Bricks agent, both billed while they exist.
 - **Instructor prep:** run `tools/check_links.py`, then Lab 1B and Lab 3A, before any cohort. Those two prove auth, the catalog, the index and the model endpoint in about ten minutes.
 
 ## Teardown
