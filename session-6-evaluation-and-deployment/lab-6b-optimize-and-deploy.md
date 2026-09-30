@@ -1,241 +1,194 @@
 # Lab 6B — Optimize, Re-Evaluate, and Deploy
 
-**Session 6 · Evaluation, Optimization and Deployment**
+**Session:** 6 — Evaluation and Deployment
+**Duration:** ~60 minutes
+**Where you work:** a Databricks notebook
+**Compute:** Serverless
 
-> ✅ **Tested end-to-end, including the live endpoint.** The optimization, the re-evaluation, the UC registration, the deployment and real HTTP queries against the running endpoint are all shown below. The workspace began as a trial — where serving is refused — and was upgraded to Premium to complete Steps 5 and 6. Both the refusal and the working deployment are included.
-
-## What you'll learn
-
-- How to run a **measured** improvement cycle rather than a hopeful one.
-- Why the first tuning attempt appeared to make the agent worse — and why **segmenting the metric reversed that conclusion**.
-- That an aggregate retrieval metric over a dataset containing negative cases is close to meaningless.
-- How to package an agent as a `ResponsesAgent`, register it in Unity Catalog, deploy it to Model Serving, and query it over HTTP.
-
-## What you'll do
-
-Change one retrieval parameter, re-run the Lab 6A evaluation, compare, then discover the comparison you actually needed. Then register the tuned agent and attempt deployment.
-
-## Time & cost
-
-- **Time:** ~50 minutes, of which ~4 is the evaluation.
-- **Cost:** one more evaluation pass plus model registration.
+> **Verified on 2026-09-30**, including the live endpoint. Every number below is from a
+> real run.
 
 ---
 
-## Before you start
+## 1. Lab Overview & Objectives
 
-- **Prior labs:** [6A](lab-6a-evaluation-dataset.md) — the baseline and the dataset come from there.
-- **Python 3.11/3.12**, plus `pip install "mlflow[databricks]" databricks-agents`.
+[Lab 6A](lab-6a-evaluation-dataset.md) gave you a baseline: **correctness 1.00, retrieval
+relevance 0.23.** The agent is right and its retrieval is mostly noise.
 
----
+Now change one thing and measure again. The headline numbers will move in the direction
+you hoped — and you will find that **not one point of that movement came from the agent
+being better at its job.**
 
-## The idea in 60 seconds
+**By the end of this lab you will be able to:**
 
-```mermaid
-flowchart TB
-    B["baseline: retrieval_relevance 0.33"] --> D{"what is the lever?"}
-    D --> S["a score floor"]
-    D --> K["fewer chunks (k)"]
-    S -.->|"scores overlap —<br/>no clean cut exists"| X["rejected"]
-    K --> T["tuned: k=2"]
-    T --> E["re-evaluate"]
-    E --> A{"aggregate says WORSE"}
-    A --> G["segment by case type"]
-    G --> R["positives: 0.50 → 0.75<br/>negatives: meaningless"]
-```
+1. Reject a tuning lever using evidence rather than instinct.
+2. Re-run an evaluation and compare variants.
+3. **Segment a metric by case type**, and explain why an unsegmented mean is unusable here.
+4. Register an agent in Unity Catalog with its `resources`, deploy it, and query it.
 
 ---
 
-## Step 1 — Pick the lever, and reject the wrong one
+## 2. Files You Will Use
 
-**Goal:** choose a change you can justify.
+| # | File | Where | What it does |
+|---|---|---|---|
+| 1 | **`Lab 6B - Optimize and Deploy`** | Workspace → `Agents-on-Databricks-Labs` | The lab. **22 cells** — 12 explaining, 10 to run. |
+| 2 | [`lab-6b-optimize-and-deploy.ipynb`](../notebooks/lab-6b-optimize-and-deploy.ipynb) | this repo, `notebooks/` | The same notebook with outputs saved. |
+| 3 | **`serving_agent.py`** | *written by cell 16* | The `ResponsesAgent` that gets registered. |
 
-The obvious fix for poor retrieval precision is a **relevance score floor**: drop anything below a threshold. Look at the actual score distribution from [Lab 3A](../session-3-grounding-and-rag/lab-3a-vector-search-index.md) first:
+**To open it:** **Workspace** → `Agents-on-Databricks-Labs` →
+**`Lab 6B - Optimize and Deploy`**, attach **Serverless**.
+
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
+---
+
+## 3. Prerequisites
+
+- [Lab 6A](lab-6a-evaluation-dataset.md) **must have run** — cell 4 compares against its
+  experiment.
+- **Premium or Enterprise** for the deployment steps. Everything up to cell 17 runs on a
+  trial.
+
+---
+
+## 4. Step-by-Step Instructions
+
+### Step 1 — Reject the obvious lever (10 min)
+
+Run **cells 0–2**.
+
+The standard fix for poor retrieval precision is a **relevance score floor**. Look at the
+distribution before reaching for it:
 
 ```console
   DOC-003-C00  score=0.7114   relevant
   DOC-003-C01  score=0.5564   relevant
   DOC-005-C00  score=0.5522   IRRELEVANT  (billing doc on a delivery question)
   DOC-001-C00  score=0.5520   relevant
-  DOC-007-C01  score=0.5236   relevant
 ```
 
-> 🚨 **Gotcha — there is no threshold that works here.** An **irrelevant** chunk scores `0.5522`; a **relevant** one scores `0.5520`. Any floor that excludes the first excludes the second. Embedding cosine scores from a single model over a small homogeneous corpus cluster tightly, and *"score > 0.55"* is a filter that looks principled and is arbitrary. **Plot your distribution before you write a threshold.**
-
-So the lever is `k`. Fewer chunks means fewer chances to include noise:
-
-```python
-RETRIEVAL_K = int(os.environ.get("LAB_RETRIEVAL_K", "3"))
-```
-
----
-
-## Step 2 — Re-evaluate, and get a discouraging result
-
-```bash
-LAB_VARIANT=tuned LAB_RETRIEVAL_K=2 python code/run_eval.py
-```
-
-| Metric | baseline k=3 | tuned k=2 |
-|---|---|---|
-| correctness | 1.00 | 1.00 |
-| safety | 1.00 | 1.00 |
-| retrieval_groundedness | 0.80 | **0.60** |
-| follows_expectations | 0.71 | **0.57** |
-| retrieval_relevance | 0.20 | 0.30 |
-
-**Two metrics went down.** The honest reading of this table is *"the change made the agent worse, revert it"*. That reading is wrong, and the next step shows why.
-
----
-
-## Step 3 — Segment before you conclude
-
-**Goal:** notice that a third of the dataset cannot produce a meaningful retrieval score.
-
-Three of the seven cases are **negative** — the corpus genuinely cannot answer them. On those, **no retrieved chunk can be relevant**, so `retrieval_relevance` is structurally 0 no matter how good retrieval is. Averaging them in drags the aggregate toward zero and hides whatever is happening on the cases that matter.
-
-```bash
-python code/compare_variants.py
-```
-
-![Metrics segmented by positive and negative cases, which reverses the conclusion](../artifacts/lab-6b/screenshots/01-segmented-comparison.png)
-
-```console
-  metric                   segment   baseline k=3     tuned k=2
-  ----------------------------------------------------------------------
-  retrieval_relevance      positive  6/12 = 0.50      6/8  = 0.75
-  retrieval_relevance      negative  0/18 = 0.00      0/12 = 0.00
-  retrieval_groundedness   positive  4/4  = 1.00      4/4  = 1.00
-  retrieval_groundedness   negative  4/6  = 0.67      2/6  = 0.33
-  correctness              positive  4/4  = 1.00      4/4  = 1.00
-  follows_expectations     positive  4/4  = 1.00      4/4  = 1.00
-  follows_expectations     negative  1/3  = 0.33      0/3  = 0.00
-  safety                   positive  4/4  = 1.00      4/4  = 1.00
-```
-
-**Read the first row.** On the questions that have a real answer, retrieval precision went from **0.50 to 0.75** — a 50% improvement — while correctness, groundedness, guidelines and safety all stayed at **1.00**.
-
-Every apparent regression is confined to the **negative** segment, where:
-- `retrieval_relevance` is 0.00 in both, as it must be;
-- `groundedness` measures grounding in chunks that should not have been used at all;
-- `follows_expectations` is the [Lab 6A](lab-6a-evaluation-dataset.md) judge defect — it penalises correct refusals.
-
-> 🚨 **The lesson.** The aggregate table said *revert*. The segmented table says *ship it*. **An aggregate over a dataset with structurally different case types is not a measurement, it is an average of incomparable things.** Segment by case type before any go/no-go decision.
-
----
-
-## Step 4 — Latency
-
-```bash
-python code/cost_latency.py
-```
-
-![Mean and p50 latency for both variants, read from the traces](../artifacts/lab-6b/screenshots/02-cost-latency.png)
-
-```console
-  variant      traces  mean latency   p50 latency
-  baseline     14      24.8s          19.4s
-  tuned        7       22.1s          17.5s
-```
-
-About **10% faster**, for free, as a side effect of retrieving less.
-
-> ⚠️ **Gotcha — two caveats on this table, and both matter.** The baseline shows **14** traces because the failed Python 3.14 run from Lab 6A is still in that experiment; the tuned variant has a clean 7. Comparing a polluted sample with a clean one is exactly the kind of thing that makes a 10% difference meaningless. Second, **token counts came back `n/a`** — `trace.info.token_usage` was not populated by this instrumentation, so the cost half of "cost and latency" is *not* measured here. Do not quote a token saving you have not read.
-
----
-
-## Step 5 — Register, and attempt to deploy
-
-**Goal:** package the tuned agent and put it in Unity Catalog.
-
-The agent is packaged as an MLflow `ResponsesAgent`, which is the interface Model Serving expects, and registered with its **resource dependencies** declared:
-
-```python
-mlflow.pyfunc.log_model(
-    name="agent", python_model="serving_agent.py",
-    registered_model_name="agents_labs.retail.support_agent",
-    resources=[
-        DatabricksServingEndpoint(endpoint_name="databricks-claude-sonnet-5"),
-        DatabricksVectorSearchIndex(index_name="agents_labs.retail.support_chunks_idx"),
-        DatabricksFunction(function_name="agents_labs.retail.get_order_summary"),
-    ])
-```
-
-**What this means.** Declaring `resources` is what lets Databricks mint scoped credentials for the endpoint at deploy time. Omit them and the model registers happily and then fails at serving with permission errors.
-
-> ⚠️ **Gotcha — UC registration needs `mlflow[databricks]`.** With plain `mlflow` it fails late, after building the model, with *"Unable to import necessary dependencies to access model version files in Unity Catalog"*. The extra pulls in the cloud storage client the UC artifact store needs.
-
-> ⚠️ **Gotcha — `agents.deploy()` needs the tracking URI set in the same process.** Without `mlflow.set_tracking_uri("databricks://profile")` it looks the logged model up in a **local** SQLite store and reports `Logged model with ID 'm-…' not found`, which reads like the model is missing rather than like it is looking in the wrong place.
-
-Registration succeeds:
-
-```console
-  registered: agents_labs.retail.support_agent version 2
-  version 2  status=READY
-```
-
-And the registered model genuinely works — loaded straight back out of Unity Catalog:
-
-```console
-$ mlflow.pyfunc.load_model("models:/agents_labs.retail.support_agent/2").predict(...)
-
-  Delivery to the Nordics takes 5 to 7 working days, as shipments are consolidated at
-  the Hamburg hub before onward transport. … [DOC-003]
-```
-
-### The deployment itself
-
-```bash
-databricks agents deploy agents_labs.retail.support_agent 2 --scale-to-zero
-```
-
-```console
-  Deployment of agents_labs.retail.support_agent version 2 initiated.
-  This can take up to 15 minutes and the Review App & Query Endpoint will not
-  work until this deployment finishes.
-
-  endpoint   agents_agents_labs-retail-support_agent
-  query url  .../serving-endpoints/agents_agents_labs-retail-support_agent/
-             served-models/agents_labs-retail-support_agent_2/invocations
-```
-
-It took about 5 minutes to reach `READY`. Poll rather than guess:
-
-```python
-e = w.serving_endpoints.get("agents_agents_labs-retail-support_agent")
-print(e.state.ready, e.state.config_update)
-# EndpointStateReady.READY EndpointStateConfigUpdate.NOT_UPDATING
-```
-
-> ⚠️ **Gotcha — that enum does not start with `READY`.** It prints as `EndpointStateReady.READY`, so a polling loop written as `case "$s" in READY*)` never matches and spins until it times out. Compare against the enum, or match on the substring.
-
-**The endpoint in the console:**
-
-![The serving endpoint page: Ready, its invocations URL, the AI Gateway inference table, and Version 2 taking 100% of traffic](../artifacts/lab-6b/screenshots/05-serving-endpoint-ui.png)
-
-| | |
-|---|---|
-| State | **Ready**, `Version 2`, 100% of traffic |
-| Compute | CPU 4 GB, **Small**, 0–4 concurrency |
-| Inference tables | `agents_labs.retail.support_agent_payload` |
-
-> 💡 **You got an inference table you did not ask for.** The AI Gateway automatically logs every request and response to `support_agent_payload` in Unity Catalog. That is genuinely useful — it is a production dataset for the next round of [Lab 6A](lab-6a-evaluation-dataset.md) evaluation, drawn from real traffic rather than cases you imagined.
+> 🚨 **An irrelevant chunk scored `0.5522`; a relevant one scored `0.5520`.** There is no
+> threshold that keeps the good one and drops the bad one. A floor at 0.55 would discard a
+> relevant chunk and keep the noise.
 >
-> It is also a **governed table containing whatever your users typed**, created without an explicit decision. Know it exists, check who has `SELECT` on it, and include it in your retention planning.
+> **"Add a relevance threshold" is the first suggestion in every RAG tuning discussion**,
+> and it assumes a separation your distribution has to actually have. Check first.
+
+The lever we *can* justify: retrieve **fewer** chunks. If two of three are noise, ask for
+two.
 
 ---
 
-### Query it
+### Step 2 — Re-run with k = 2 (12 min)
 
-```bash
-python session-6-evaluation-and-deployment/code/query_endpoint.py
-```
+Run **cells 3–5**. Same seven cases, same six scorers, `RETRIEVAL_K = 2`.
 
-![The deployed agent answering over HTTP, with a correct citation and a correct refusal](../artifacts/lab-6b/screenshots/04-endpoint-live.png)
+---
+
+### Step 3 — Compare the aggregates (8 min)
+
+Run **cell 6**.
 
 ```console
-  endpoint  agents_agents_labs-retail-support_agent
+  metric                                    k=3     k=2
+  correctness/mean                         1.00    1.00
+  follows_expectations/mean                0.71    0.86  better
+  relevance_to_query/mean                  1.00    1.00
+  retrieval_groundedness/mean              0.60    0.60
+  retrieval_relevance/mean                 0.23    0.30  better
+  safety/mean                              1.00    1.00
+```
 
+Two metrics up, nothing down. **The tempting conclusion is "retrieving less helped, ship
+it."**
+
+You cannot justify that from this table. Hold on to `follows_expectations` moving
+`0.71 → 0.86` in particular.
+
+---
+
+### Step 4 — Segment, and find out what actually happened (15 min)
+
+Run **cell 7**.
+
+```console
+  metric                   segment    baseline k=3     tuned k=2
+  retrieval_relevance      positive   26/48 = 0.54     18/24 = 0.75
+  retrieval_relevance      negative    0/66 = 0.00      0/38 = 0.00
+
+  follows_expectations     positive   16/16 = 1.00     12/12 = 1.00
+  follows_expectations     negative    7/12 = 0.58      4/9  = 0.44
+```
+
+**Finding 1 — the tuning worked, where the metric means anything.**
+Retrieval precision on positives went **0.54 → 0.75**. The negatives sat at exactly
+`0.00` in both variants — **66 and 38 judgements, not one non-zero** — because on a
+question the corpus cannot answer, no retrieved chunk can be relevant. That third of your
+dataset can never improve and permanently drags the mean down.
+
+**Finding 2 — and this is the one that matters.**
+`follows_expectations` is **perfect on positives in both variants: 16/16 and 12/12.**
+Every single failure lives in the negative cases — where
+[Lab 6A](lab-6a-evaluation-dataset.md) already showed the judge penalising *correct
+refusals*.
+
+> 🚨 **The aggregate moved from 0.71 to 0.86, and not one point of that came from the
+> agent being better at following instructions.**
+>
+> It is noise from a segment whose judge you already know to be unreliable.
+>
+> **This is more dangerous than a metric that misleads downward.** A number moving the way
+> you hoped is one nobody re-examines. Had it gone `0.86 → 0.71` someone would have
+> investigated. Going up, it gets pasted into a status update as proof the tuning worked.
+
+> ⚠️ **Two honest caveats about these figures.**
+>
+> **The baseline is polluted.** Its experiment accumulates traces across every run of Lab
+> 6A — 48 positive judgements against 24 for the tuned variant. Different denominators make
+> a small delta unreliable. Clear the experiment, or compare like with like.
+>
+> **Token cost was not measured.** `token_usage` came back unpopulated, so "cheaper" is an
+> inference from retrieving less, not an observation. **Do not quote a cost saving you did
+> not measure.**
+
+---
+
+### Step 5 — Register the agent (8 min)
+
+Run **cells 8–9**. Cell 8 uses `%%writefile` to create `serving_agent.py` — an MLflow
+`ResponsesAgent`, the interface Model Serving expects.
+
+The part people omit is `resources`:
+
+```python
+resources=[
+    DatabricksServingEndpoint(endpoint_name="databricks-claude-sonnet-5"),
+    DatabricksServingEndpoint(endpoint_name="databricks-gte-large-en"),
+    DatabricksVectorSearchIndex(index_name="agents_labs.retail.support_chunks_idx"),
+    DatabricksFunction(function_name="agents_labs.retail.get_order_summary"),
+]
+```
+
+> ⚠️ **Declaring `resources` is what lets Databricks mint scoped credentials for the
+> endpoint.** Omit them and the model registers happily, then fails at serving with
+> permission errors — a failure that arrives minutes later and points nowhere useful.
+
+> ⚠️ **UC registration needs `mlflow[databricks]`, not plain `mlflow`.** With the latter it
+> fails *after* building the model with *"Unable to import necessary dependencies to access
+> model version files in Unity Catalog"*. The `%pip` line in cell 0 already has it.
+
+---
+
+### Step 6 — Deploy and query (10 min)
+
+Run **cells 10–11**.
+
+```console
   Q: How long do I have to return a task chair?
   (6.8s)
   Task chairs are seating products, so you have **60 days** from delivery to return
@@ -251,65 +204,45 @@ python session-6-evaluation-and-deployment/code/query_endpoint.py
 
 **Two things to take from this.**
 
-**The caller got simpler.** Look at [`query_endpoint.py`](code/query_endpoint.py): no vector-search client, no OpenAI client, no Databricks SDK doing retrieval. One authenticated `POST`. The endpoint holds the credentials for the chat model, the index and the UC function — which is precisely what the `resources` list at log time bought you.
+**The caller got simpler.** No vector-search client, no OpenAI client, no SDK doing
+retrieval. One authenticated `POST`. The endpoint holds the credentials for the model, the
+index and the UC function — which is exactly what `resources` bought you.
 
-**It got faster.** 6.8s and 6.0s, against roughly 10–25s for the same agent running locally in earlier steps. The endpoint keeps its clients warm; your laptop was rebuilding a vector-search client on every call. Do not read this as "serving makes agents fast" — it means local timings are a poor latency baseline.
+**It got faster.** ~6s, against 10–25s for the same agent in a notebook. The endpoint keeps
+its clients warm; your notebook rebuilds them every call. **Do not read that as "serving
+makes agents fast"** — it means local timings are a poor latency baseline.
 
-> ⚠️ **Model Serving requires Premium.** A trial workspace can do everything else in this course — Vector Search, Genie, MCP, Unity Catalog, MLflow evaluation, and model **registration** — but not serving. The refusal is explicit:
+> 🚨 **Model Serving requires Premium or Enterprise.** On a trial:
 >
-> ```console
+> ```
 > NotFound: Model serving is not available for trial workspaces.
->           Please contact your organization admin or Databricks support.
 > ```
 >
-> ![The same deployment refused before the workspace was upgraded](../artifacts/lab-6b/screenshots/03-serving-blocked-on-trial.png)
->
-> This course was built on a trial and the workspace was upgraded to Premium specifically to complete this step. Azure allows **trial → premium only**; there is no way back. **Confirm your SKU before planning a session around Steps 5 and 6.**
-
-> 💡 **Scale-to-zero is not free of consequences.** `--scale-to-zero` stops the endpoint billing when idle, at the cost of a cold start on the next request. For a classroom that is the right trade; for a latency-sensitive production agent it is not.
+> Azure allows **trial → premium only**, never the reverse. Confirm your SKU before
+> planning a session around Steps 5 and 6.
 
 ---
 
-## Step 6 — Clean up
-
-The endpoint is the one object here that bills while it exists, even with scale-to-zero, and it is **not** removed by dropping the catalog:
-
-```bash
-databricks agents delete-deployment agents_labs.retail.support_agent
-# or, equivalently
-databricks serving-endpoints delete agents_agents_labs-retail-support_agent
-```
-
-The registered model and its aliases go with the catalog at course end. See [`TEARDOWN.md`](../TEARDOWN.md).
-
----
-
-## What you learned
+## 5. What You Learned
 
 | You saw… | in Step | proof |
 |---|---|---|
-| A score threshold needs a distribution that supports one | 1 gotcha | irrelevant 0.5522 outranks relevant 0.5520 |
-| Aggregate metrics said the change made things worse | 2 | groundedness 0.80 → 0.60 |
-| Segmenting reversed the conclusion | 3 | positives 0.50 → **0.75**, all else 1.00 |
-| Negative cases make retrieval metrics structurally 0 | 3 | 0/18 and 0/12, both variants |
-| Retrieving less is also faster | 4 | 24.8s → 22.1s mean |
-| A polluted baseline invalidates a small delta | 4 gotcha | 14 traces vs 7 |
-| Token cost was **not** measured | 4 gotcha | `token_usage` unpopulated |
-| `resources` are what make serving credentials work | 5 | endpoint, index and function declared |
-| UC registration needs `mlflow[databricks]` | 5 gotcha | fails after building the model |
-| Model Serving is Premium-only | 5 | `not available for trial workspaces` |
-| The deployed endpoint answers correctly over HTTP | 5 | `[DOC-001]` cited, ungrounded question refused |
-| The caller loses every client library | 5 | one authenticated `POST` |
-| Local timings are a poor latency baseline | 5 | ~6s served vs 10–25s local |
-| The readiness enum is not the string `READY` | 5 gotcha | `EndpointStateReady.READY` |
-| The AI Gateway creates an inference table unasked | 5 | `support_agent_payload` |
+| A score floor needs a distribution that supports one | 1 | irrelevant 0.5522 beats relevant 0.5520 |
+| Retrieval precision improved on positives | 4 | **0.54 → 0.75** |
+| Negative cases score 0 structurally, forever | 4 | 0/66 and 0/38 |
+| `follows_expectations` was already perfect on positives | 4 | 16/16 and 12/12 |
+| **The headline gain came from judge noise, not the agent** | 4 | all failures in negatives |
+| A metric moving the right way gets less scrutiny | 4 | the reason this matters |
+| The baseline sample is polluted | 4 caveat | 48 vs 24 judgements |
+| Token cost was **not** measured | 4 caveat | `token_usage` unpopulated |
+| `resources` is what makes serving credentials work | 5 | endpoint, index, function |
+| The deployed caller needs no client libraries | 6 | one `POST` |
+| Local timings are a poor latency baseline | 6 | ~6s served vs 10–25s local |
 
-## Evidence
+## 6. What You Hand In
 
-[`artifacts/lab-6b/evidence/lab-6a-baseline-and-comparison.txt`](../artifacts/lab-6b/evidence/lab-6a-baseline-and-comparison.txt) — both runs, the segmented comparison, latency, and the deployment attempt.
-- [`artifacts/lab-6b/evidence/04-endpoint-query.txt`](../artifacts/lab-6b/evidence/04-endpoint-query.txt) — both HTTP queries against the live endpoint.
-
-Source: [`code/compare_variants.py`](code/compare_variants.py), [`code/deploy_agent.py`](code/deploy_agent.py), [`code/serving_agent.py`](code/serving_agent.py), [`code/query_endpoint.py`](code/query_endpoint.py).
+The **segmented** table, not the aggregate — plus one sentence on what you would have
+concluded from cell 6 alone. That sentence is the lab.
 
 ---
 
