@@ -53,15 +53,25 @@ def _index():
     return _vsc.get_index(endpoint_name=ENDPOINT, index_name=INDEX)
 
 
+# Lab 6B tuning knobs. Baseline is k=3 with no floor, which is the default most
+# people ship and which scored retrieval_relevance 0.33 in Lab 6A.
+RETRIEVAL_K     = int(os.environ.get("LAB_RETRIEVAL_K", "3"))
+RETRIEVAL_FLOOR = float(os.environ.get("LAB_RETRIEVAL_FLOOR", "0"))
+
+
 @mlflow.trace(span_type="RETRIEVER")
-def search_policy(query: str, audience: str = "customer", k: int = 3) -> list[dict]:
+def search_policy(query: str, audience: str = "customer", k: int | None = None) -> list[dict]:
+    k = k or RETRIEVAL_K
     r = _index().similarity_search(
         query_text=query,
         columns=["chunk_id", "doc_id", "title", "audience", "chunk"],
         filters={"audience": audience}, num_results=k)
     rows = r.get("result", {}).get("data_array", []) or []
-    return [{"chunk_id": x[0], "doc_id": x[1], "title": x[2],
+    hits = [{"chunk_id": x[0], "doc_id": x[1], "title": x[2],
              "text": x[4], "score": round(float(x[-1]), 4)} for x in rows]
+    # Drop weak matches rather than padding the context to k. An irrelevant
+    # chunk is not free: it costs tokens and competes for the model's attention.
+    return [h for h in hits if h["score"] >= RETRIEVAL_FLOOR]
 
 
 @mlflow.trace(span_type="TOOL")
