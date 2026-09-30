@@ -25,7 +25,7 @@ The workspace began as a **trial** and was upgraded to **Premium** to finish the
 | | [6B — Optimize and Deploy](session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) | **Notebook.** The headline metric improved — and **none of the gain came from the agent**. Deployed and queried over HTTP. | ✅ live · notebook |
 | **7 · Operations and multi-agent** | [7A — A Supervisor and Two Workers](session-7-operations-and-multi-agent/lab-7a-multi-agent-supervisor.md) | **Notebook.** The supervisor **re-delegates** after learning a fact, inverting the answer — and a starved worker answers confidently instead of refusing. | ✅ live · notebook |
 | | [7B — Canaries, Rollback and Agent Bricks](session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) | **Notebook + console.** A real defect the canary finds — and the **control column proves the change did not cause it**. Alias rollback; a no-code brick **disclosing an internal document**. | ✅ live · notebook |
-| **Capstone** | [Returns Adjudication Agent](capstone/capstone-brief.md) | Independent build, graded by script. Grader verified at 100/100 and 30/100. | ✅ live |
+| **Capstone** | [Returns Adjudication Agent](capstone/capstone-brief.md) | **Notebook.** Independent build, graded by a notebook that `%run`s your submission. Verified at **100/100** and **30/100**. | ✅ live · notebook |
 
 ## Two routes through the platform
 

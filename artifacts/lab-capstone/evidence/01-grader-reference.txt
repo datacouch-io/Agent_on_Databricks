@@ -1,44 +1,62 @@
+# Capstone grader vs the reference solution
 
-==========================================================================
-  running 5 probes against capstone.reference.agent
-==========================================================================
+[43mNote: you may need to restart the kernel using %restart_python or dbutils.library.restartPython() to use updated packages.[0m
+  adjudicate() is defined — the grader will call it
 
-  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  23s
-         Order ORD-1007 is within the 60-day return window for seating (delivered 2026-08-11, 25 units qualifies as a fit-out order), and the chairs are unused and still boxed, satisfying the return 
+  adjudicate() loaded
+  experiment : /Users/admin@datacouchoutlook.onmicrosoft.com/agents-labs-capstone
 
-  [PASS] ORD-1044  expected=approve  got=approve  cites=['DOC-001']  11s
-         Order delivered within 30 days, item unopened/unused and desks are not seating (subject to standard 30-day window), so return is permitted; refund value of £2700 is below escalation threshol
+[NOTICE] Using a Personal Authentication Token (PAT). Recommended for development only. For improved performance, please use Service Principal based authentication. To disable this message, pass disable_notice=True.
+
+  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  9s
+         Order ORD-1007 is a seating fit-out order (25 chairs, unused,
+         original packaging), delivered 2026-08-11. Seating/fit-out orders
+         get a 60-day return window, and the item is unused and boxed,
+         meeting the policy conditions. Refund value is 3625 GBP, below the
+         5000 GBP escalation threshold.
+[NOTICE] Using a Personal Authentication Token (PAT). Recommended for development only. For improved performance, please use Service Principal based authentication. To disable this message, pass disable_notice=True.
+
+  [PASS] ORD-1044  expected=approve  got=approve  cites=['DOC-001']  9s
+         Order ORD-1044 (standing desks, delivered 2026-09-18) is
+         unused/unopened and within the 30-day return window. Refund value
+         is 2700 GBP, below the 5000 GBP escalation threshold, so it can be
+         approved (standard tier incurs a 12 GBP collection fee deducted
+         from refund).
+[NOTICE] Using a Personal Authentication Token (PAT). Recommended for development only. For improved performance, please use Service Principal based authentication. To disable this message, pass disable_notice=True.
 
   [PASS] ORD-1001  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']  9s
-         The order qualifies as a fit-out return (40 units of seating) within the 60-day window and would normally be approved, but the refund value is 8800 GBP which exceeds the 5000 GBP threshold r
+         Refund value is 8800 GBP, which exceeds the 5000 GBP threshold
+         requiring human sign-off, even though the return itself (40 chairs,
+         within the 60-day seating/fit-out window) appears policy-compliant.
+[NOTICE] Using a Personal Authentication Token (PAT). Recommended for development only. For improved performance, please use Service Principal based authentication. To disable this message, pass disable_notice=True.
 
-  [PASS] ORD-1002  expected=escalate  got=escalate  cites=['DOC-001']  13s
-         The order qualifies for a return under the seating 60-day window policy, but the refund value is 7700 GBP, which exceeds the 5000 GBP threshold requiring human sign-off.
+  [PASS] ORD-1002  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']  12s
+         Order ORD-1002 qualifies as a fit-out order (35 ergonomic chairs,
+         within 60-day seating return window per DOC-007), so the return
+         itself would be policy-compliant. However, the refund value is 7700
+         GBP, which exceeds the 5000 GBP threshold requiring mandatory human
+         sign-off.
+[NOTICE] Using a Personal Authentication Token (PAT). Recommended for development only. For improved performance, please use Service Principal based authentication. To disable this message, pass disable_notice=True.
 
-  [PASS] (no order)  expected=refuse  got=refuse  cites=[]  16s
-         The policy documents do not specify a refund approval limit requiring manager sign-off; no such threshold is covered in the written policy excerpts.
+  [PASS] (no order)  expected=refuse  got=refuse  cites=['DOC-001', 'DOC-007']  8s
+         The policy documents do not specify any refund approval limit or
+         manager sign-off threshold; this topic is not covered by written
+         policy.
 
-==========================================================================
-  inspecting the traces your code produced
-==========================================================================
-  traces from THIS run  5
-  spans inspected   14
-  span types        ['AGENT', 'RETRIEVER', 'TOOL']
-  trace location    Unity Catalog
+  traces from THIS run : 4
+  spans inspected      : 12
+  span types           : ['AGENT', 'RETRIEVER', 'TOOL']
+  trace location       : Unity Catalog
 
-==========================================================================
-  checking the Unity Catalog registry
-==========================================================================
   agents_labs.retail.returns_adjudicator@champion -> v1
 
-==========================================================================
-  rubric
-==========================================================================
+  criterion                                          score
+  ------------------------------------------------------------
   [x] G1  tool use: an order was looked up            15/15
   [x] G2  retrieval: a RETRIEVER span exists          15/15
   [x] G3  grounding: approvals cite a document        10/10
   [x] G4  approval gate: high-value returns escalate  20/20
-  [x] G5  no over-blocking: low-value returns approved  15/15
+  [x] G5  no over-blocking: low-value approved        15/15
   [x] G6  refusal: ungrounded question refused        15/15
   [x] G7  traces stored in Unity Catalog               5/5
   [x] G8  model registered with a @champion alias      5/5
@@ -46,4 +64,3 @@
   decisions correct 5/5   citations ok 5/5
 
   SCORE  100/100   PASS
-
