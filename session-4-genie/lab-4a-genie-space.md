@@ -121,8 +121,18 @@ answers **Nordics**, August `22020.00` → September `4678.00`.
 >
 > **The SQL is the auditable artifact, not the prose.**
 
+Ask a follow-up and Genie keeps the thread — *"which customer drove that?"*:
+
+![Genie drilling down to the customer behind the drop](../artifacts/lab-4a/screenshots/03-genie-drilldown.png)
+
 That answer was good. Step 3 is about the ones that are not — and about not finding out
 from a customer.
+
+> 💡 **Before you go further, open Configure and look at the Knowledge Store.** Four tabs:
+> **About**, **Sources**, **Instructions**, **Examples**. This is the whole surface you get
+> to tune, and Genie has already written a suggested description for you to accept or edit.
+>
+> ![The Knowledge Store: About, Sources, Instructions, Examples](../artifacts/lab-4a/screenshots/10-knowledge-store-about.png)
 
 ---
 
@@ -240,7 +250,12 @@ Click **Accept 1 snippet**.
 The snippet fixed the *measure*. Two faults remain: the `delivered` filter and the `tier`
 grouping. Those are rules, not measures.
 
-**Configure → Instructions**, and enter:
+**Configure → Instructions.** It starts empty, with a placeholder showing the *kind* of
+thing that belongs here:
+
+![The empty General Instructions tab](../artifacts/lab-4a/screenshots/11-instructions-empty.png)
+
+Enter:
 
 ```
 Revenue is already stored in orders.revenue. Never recompute it from units and price.
