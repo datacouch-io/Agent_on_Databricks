@@ -171,7 +171,9 @@ databricks warehouses stop $LAB_WAREHOUSE_ID
 
 ## Evidence
 
-[`artifacts/lab-4a/evidence/lab-4a-genie-answers.txt`](../artifacts/lab-4a/evidence/lab-4a-genie-answers.txt) — the underlying Genie responses.
+- [`artifacts/lab-4b/evidence/01-agent-with-genie.txt`](../artifacts/lab-4b/evidence/01-agent-with-genie.txt) — the full combined answer, with the Genie questions the agent chose quoted inline.
+- [`artifacts/lab-4a/evidence/lab-4a-genie-answers.txt`](../artifacts/lab-4a/evidence/lab-4a-genie-answers.txt) — the underlying Genie responses.
+
 Source: [`code/agent_with_genie.py`](code/agent_with_genie.py).
 
 ---
