@@ -10,7 +10,7 @@ The workspace began as a **trial** and was upgraded to **Premium** to finish the
 
 | Session | Lab | What it establishes | Tested |
 |---|---|---|---|
-| **1 · Agent architecture** | [1A — Workflow vs Agent](session-1-agent-architecture/lab-1a-workflow-vs-agent.md) | When an agent is the wrong answer. Written classification exercise. | design exercise |
+| **1 · Agent architecture** | [1A — Workflow or Agent?](session-1-agent-architecture/lab-1a-workflow-vs-agent.md) | When an agent is the wrong answer. Four scenarios, a worksheet to hand in, two of them traps. | paper exercise |
 | | [1B — A Minimal Agent](session-1-agent-architecture/lab-1b-minimal-agent.md) | The execution loop, stopping conditions, a human-approval gate, and a prompt-injection attempt. | ✅ live |
 | | [1C — Build Your First Agent in the UI](session-1-agent-architecture/lab-1c-build-your-first-agent-in-the-ui.md) | The same agent with **no code**, in the AI Playground. One button generates the whole lifecycle — and leaves **7 `TODO`s**. | ✅ live · UI walkthrough |
 | **2 · Platform-agnostic design** | [2A — Retrieval and Tools](session-2-platform-agnostic/lab-2a-retrieval-and-tools.md) | Core logic that imports nothing from Databricks, behind Protocols. | ✅ live |
