@@ -38,14 +38,26 @@ Everything is in one notebook. Your instructor has placed it in your workspace.
 
 | # | File | Where | What it does |
 |---|---|---|---|
-| 1 | **`Lab 1B - Minimal Agent`** | Workspace → `Agents-on-Databricks-Labs` | The whole lab. 26 cells: install, connect, two tools, the loop, then four scenarios you run one at a time. |
-| 2 | *(optional)* [`worksheet.md`](files/worksheet.md) | from Lab 1A | Part 3 listed four failure modes. Cells 8–10 are three of them. Compare. |
+| 1 | **`Lab 1B - Minimal Agent`** | Workspace → `Agents-on-Databricks-Labs` | The whole lab. **26 cells** — 14 explaining, 12 to run: install, connect, two tools, the loop, then four scenarios you run one at a time. |
+| 2 | [`lab-1b-minimal-agent.ipynb`](../notebooks/lab-1b-minimal-agent.ipynb) | this repository, `notebooks/` | The same notebook as a **`.ipynb`** file. It renders on GitHub **with the expected outputs already in it**, so you can read the whole lab before running anything. |
+| 3 | *(optional)* [`worksheet.md`](files/worksheet.md) | from Lab 1A | Part 3 listed four failure modes. Cells 8–10 are three of them. Compare. |
 
-**To open it:**
+**To open it in your workspace:**
 
 1. Click **Workspace** in the left navigation.
 2. Open the **`Agents-on-Databricks-Labs`** folder.
 3. Click **`Lab 1B - Minimal Agent`**.
+
+**If it isn't there**, import the `.ipynb` yourself — it is a standard Jupyter notebook:
+
+1. **Workspace** → your folder → **⋮** → **Import**.
+2. Choose **File**, and select [`notebooks/lab-1b-minimal-agent.ipynb`](../notebooks/lab-1b-minimal-agent.ipynb).
+3. Click **Import**.
+
+> 💡 **The `.ipynb` arrives with the outputs from a real run already saved in it.** That is
+> deliberate — you can read what each cell *should* produce before you run it, and compare
+> afterwards. Use **Run all** → **Clear state and outputs** first if you would rather start
+> from a blank slate.
 
 ![The notebook open in the workspace](../artifacts/lab-1b/screenshots/05-notebook-open-in-workspace.png)
 

@@ -186,12 +186,21 @@ for t in TOOLS:
 # MAGIC | Function | Why it exists |
 # MAGIC |---|---|
 # MAGIC | `text_of` | Claude returns `content` as a **list of typed blocks**, not a string. Read it wrong and you print a reasoning blob at the customer. |
+# MAGIC
+# MAGIC The cell also silences one noisy warning. Read the comment explaining which, and why
+# MAGIC silencing a warning is acceptable *here* and rarely elsewhere.
 # MAGIC | `call_with_retry` | Tools fail. Retry with backoff, then give up — don't retry forever. |
 # MAGIC | `needs_human` | The approval gate. **In code, not in the prompt.** |
 
 # COMMAND ----------
 
-import json, time
+import json, time, warnings
+
+# Claude returns `content` as a list of typed blocks. Pydantic notices that this
+# is not the `str` the OpenAI schema declares and warns on every single call.
+# The warning is harmless -- `text_of` below is what handles the real issue --
+# but it buries your output, so we silence just that one.
+warnings.filterwarnings("ignore", message=".*serializer warnings.*")
 
 
 def text_of(message) -> str:
