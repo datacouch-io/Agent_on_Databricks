@@ -285,4 +285,4 @@ Source: [`code/support_agent.py`](code/support_agent.py).
 
 ---
 
-**Next:** [Lab 2A — An Agent That Needs Two Sources to Answer](../session-2-platform-agnostic/lab-2a-retrieval-and-tools.md) — the same loop, now combining retrieved documents with a live data call.
+**Next:** [Lab 1C — Build Your First Agent in the Databricks UI](lab-1c-build-your-first-agent-in-the-ui.md)

@@ -12,6 +12,7 @@ The workspace began as a **trial** and was upgraded to **Premium** to finish the
 |---|---|---|---|
 | **1 · Agent architecture** | [1A — Workflow vs Agent](session-1-agent-architecture/lab-1a-workflow-vs-agent.md) | When an agent is the wrong answer. Written classification exercise. | design exercise |
 | | [1B — A Minimal Agent](session-1-agent-architecture/lab-1b-minimal-agent.md) | The execution loop, stopping conditions, a human-approval gate, and a prompt-injection attempt. | ✅ live |
+| | [1C — Build Your First Agent in the UI](session-1-agent-architecture/lab-1c-build-your-first-agent-in-the-ui.md) | The same agent with **no code**, in the AI Playground. One button generates the whole lifecycle — and leaves **7 `TODO`s**. | ✅ live · UI walkthrough |
 | **2 · Platform-agnostic design** | [2A — Retrieval and Tools](session-2-platform-agnostic/lab-2a-retrieval-and-tools.md) | Core logic that imports nothing from Databricks, behind Protocols. | ✅ live |
 | | [2B — Swap the Adapters](session-2-platform-agnostic/lab-2b-adapter-swap.md) | Keyword and embedding retrievers give **identical answers** with different retrieval quality. | ✅ live |
 | **3 · Grounding and RAG** | [3A — Vector Search Index](session-3-grounding-and-rag/lab-3a-vector-search-index.md) | Delta Sync index, managed embeddings, CDF, metadata filters. | ✅ live |
@@ -25,6 +26,16 @@ The workspace began as a **trial** and was upgraded to **Premium** to finish the
 | **7 · Operations and multi-agent** | [7A — A Supervisor and Two Workers](session-7-operations-and-multi-agent/lab-7a-multi-agent-supervisor.md) | State passing; a context-starved worker answers confidently instead of refusing. | ✅ live |
 | | [7B — Canaries, Rollback and Agent Bricks](session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) | A regression that reproduces **2 times in 3**; alias-based rollback; a no-code brick **disclosing an internal document** the hand-built agent refuses. | ✅ live |
 | **Capstone** | [Returns Adjudication Agent](capstone/capstone-brief.md) | Independent build, graded by script. Grader verified at 100/100 and 30/100. | ✅ live |
+
+## Two routes through the platform
+
+The course teaches the same capabilities twice, on purpose.
+
+**The UI route** is what a Databricks user reaches for first: the [AI Playground](session-1-agent-architecture/lab-1c-build-your-first-agent-in-the-ui.md) for prototyping, [Genie](session-4-genie/lab-4a-genie-space.md) for data questions, [Agent Bricks](session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) for a no-code assistant. It is fast, and Lab 1C gets to a working tool-calling agent in fifteen minutes without typing anything.
+
+**The code route** is every other lab. It exists because the UI route stops at the same place every time — the point where the platform hands you a scaffold full of `TODO`s and a set of defaults that are *defaults*, not decisions. Lab 1C ends by generating a 463-line notebook with seven of them; Lab 7B shows what one unfilled blank costs.
+
+Teach 1C first if your audience is new to Databricks. Teach 1B first if they are new to agents.
 
 ## The thread through the labs
 
