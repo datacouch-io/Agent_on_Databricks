@@ -19,6 +19,15 @@ def _in_notebook() -> bool:
     return "DATABRICKS_RUNTIME_VERSION" in os.environ
 
 
+# Libraries such as MLflow construct their own WorkspaceClient() with no
+# arguments, which resolves credentials through the SDK's *own* environment
+# variable. Our LAB_/DATABRICKS_PROFILE convention is invisible to them, so
+# mirror it onto the variable the SDK actually reads.
+if not _in_notebook() and os.environ.get("DATABRICKS_PROFILE") \
+        and not os.environ.get("DATABRICKS_CONFIG_PROFILE"):
+    os.environ["DATABRICKS_CONFIG_PROFILE"] = os.environ["DATABRICKS_PROFILE"]
+
+
 @functools.lru_cache(maxsize=1)
 def workspace():
     """A databricks-sdk WorkspaceClient, however we happen to be running."""
