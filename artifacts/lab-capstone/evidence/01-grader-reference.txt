@@ -1,0 +1,49 @@
+
+==========================================================================
+  running 5 probes against capstone.reference.agent
+==========================================================================
+
+  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  15s
+         The chairs are unused and in original packaging; as a 25-unit seating order it qualifies as a fit-out order with a 60-day return window, and the refund value (£3625) is below the escalation 
+
+  [PASS] ORD-1044  expected=approve  got=approve  cites=['DOC-001']  12s
+         The desks were delivered within the last week, are unopened/unused, and the order falls within the 30-day return window; refund value is £2700, below the escalation threshold, though a 12 GB
+
+  [PASS] ORD-1001  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']  13s
+         The return is within policy (seating fit-out orders have a 60-day return window), but the refund value of £8800 exceeds the £5000 threshold requiring human sign-off.
+
+  [PASS] ORD-1002  expected=escalate  got=escalate  cites=['DOC-001']  10s
+         The order qualifies for a return under the 60-day seating policy, but the refund value is 7700 GBP, which exceeds the 5000 GBP threshold requiring human sign-off.
+
+  [PASS] (no order)  expected=refuse  got=refuse  cites=[]  10s
+         The policy documents do not specify a refund approval limit or manager sign-off threshold; this information is not covered in the customer-facing policy excerpts.
+
+==========================================================================
+  inspecting the traces your code produced
+==========================================================================
+  traces found      10
+  spans inspected   20
+  span types        ['AGENT', 'RETRIEVER', 'TOOL']
+  trace location    Unity Catalog
+
+==========================================================================
+  checking the Unity Catalog registry
+==========================================================================
+  agents_labs.retail.returns_adjudicator@champion -> v1
+
+==========================================================================
+  rubric
+==========================================================================
+  [x] G1  tool use: an order was looked up            15/15
+  [x] G2  retrieval: a RETRIEVER span exists          15/15
+  [x] G3  grounding: approvals cite a document        10/10
+  [x] G4  approval gate: high-value returns escalate  20/20
+  [x] G5  no over-blocking: low-value returns approved  15/15
+  [x] G6  refusal: ungrounded question refused        15/15
+  [x] G7  traces stored in Unity Catalog               5/5
+  [x] G8  model registered with a @champion alias      5/5
+
+  decisions correct 5/5   citations ok 5/5
+
+  SCORE  100/100   PASS
+

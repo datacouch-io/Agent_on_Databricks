@@ -1,0 +1,49 @@
+
+==========================================================================
+  running 5 probes against capstone.reference.agent_naive
+==========================================================================
+
+  [FAIL] ORD-1007  expected=approve  got=escalate  cites=[]  5s
+         Insufficient information to approve or refuse: order date, return window eligibility, and specific policy terms for order ORD-1007 are not provided. Item condition (unused, boxed) is favorab
+
+  [FAIL] ORD-1044  expected=approve  got=approve  cites=[]  5s
+         The desks are unopened and the return request was made within a week of delivery, which meets standard conditions for a straightforward return (unused item, timely request).
+
+  [PASS] ORD-1001  expected=escalate  got=escalate  cites=[]  5s
+         Insufficient information to adjudicate this return request. Order ORD-1001 details (items, purchase date, condition, reason for return) and applicable return policy terms are not available t
+
+  [PASS] ORD-1002  expected=escalate  got=escalate  cites=[]  3s
+         No order details, return reason, or policy information were provided for ORD-1002, so the request cannot be adjudicated without additional information.
+
+  [FAIL] (no order)  expected=refuse  got=escalate  cites=[]  5s
+         This request asks about internal refund approval policy thresholds rather than presenting an actual return case to adjudicate. I don't have a defined policy document specifying the manager s
+
+==========================================================================
+  inspecting the traces your code produced
+==========================================================================
+  traces from THIS run  5
+  spans inspected   5
+  span types        ['AGENT']
+  trace location    Unity Catalog
+
+==========================================================================
+  checking the Unity Catalog registry
+==========================================================================
+  agents_labs.retail.returns_adjudicator@champion -> v1
+
+==========================================================================
+  rubric
+==========================================================================
+  [ ] G1  tool use: an order was looked up             0/15
+  [ ] G2  retrieval: a RETRIEVER span exists           0/15
+  [ ] G3  grounding: approvals cite a document         0/10
+  [x] G4  approval gate: high-value returns escalate  20/20
+  [ ] G5  no over-blocking: low-value returns approved   0/15
+  [ ] G6  refusal: ungrounded question refused         0/15
+  [x] G7  traces stored in Unity Catalog               5/5
+  [x] G8  model registered with a @champion alias      5/5
+
+  decisions correct 3/5   citations ok 3/5
+
+  SCORE  30/100   NOT YET — 80 required
+
