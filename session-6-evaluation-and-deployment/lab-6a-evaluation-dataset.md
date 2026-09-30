@@ -149,6 +149,17 @@ It finds the one useful chunk among three and writes a good answer from it.
 
 That is fine until the useful chunk is not in the top three.
 
+**The same run in the MLflow UI.** `mlflow.genai.evaluate()` writes an evaluation run you
+can open, and this is where most teams will read their results:
+
+![The evaluation run: Correctness 100% pass, Relevance 100%, Retrieval 20%, with per-trace pass and fail](../artifacts/lab-6a/screenshots/02-evaluation-scorers-ui.png)
+
+> ⚠️ **Note the `Error 3` count beside Correctness.** Those are scorer executions that
+> could not run — in this course's first attempt, `databricks-agents` was missing because
+> the environment was Python 3.14. **A scorer that *errors* is not a scorer that *passed***,
+> and the aggregate quietly excludes it. Always read the error column next to the
+> percentage.
+
 > ⚠️ **`retrieval_relevance` is also structurally unfair here.** Three of seven cases are
 > negatives where *no* chunk can be relevant, so they score zero whatever the retriever
 > does. [Lab 6B](lab-6b-optimize-and-deploy.md) proves this and shows what happens when

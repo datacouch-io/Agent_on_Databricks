@@ -202,6 +202,19 @@ Run **cells 10–11**.
   documentation.
 ```
 
+**The endpoint in the console:**
+
+![The serving endpoint page: Ready, its invocations URL, the AI Gateway inference table, and Version 2 at 100% of traffic](../artifacts/lab-6b/screenshots/05-serving-endpoint-ui.png)
+
+> 💡 **You got an inference table you did not ask for.** The AI Gateway logs every request
+> and response to `agents_labs.retail.support_agent_payload`. That is genuinely useful — a
+> production dataset for the next round of [Lab 6A](lab-6a-evaluation-dataset.md)
+> evaluation, drawn from real traffic rather than cases you imagined.
+>
+> It is also a **governed table containing whatever your users typed**, created without an
+> explicit decision. Know it exists, check who has `SELECT` on it, and include it in your
+> retention planning.
+
 **Two things to take from this.**
 
 **The caller got simpler.** No vector-search client, no OpenAI client, no SDK doing
@@ -217,6 +230,8 @@ makes agents fast"** — it means local timings are a poor latency baseline.
 > ```
 > NotFound: Model serving is not available for trial workspaces.
 > ```
+>
+> ![The same deployment refused before the workspace was upgraded](../artifacts/lab-6b/screenshots/03-serving-blocked-on-trial.png)
 >
 > Azure allows **trial → premium only**, never the reverse. Confirm your SKU before
 > planning a session around Steps 5 and 6.
@@ -238,6 +253,7 @@ makes agents fast"** — it means local timings are a poor latency baseline.
 | `resources` is what makes serving credentials work | 5 | endpoint, index, function |
 | The deployed caller needs no client libraries | 6 | one `POST` |
 | Local timings are a poor latency baseline | 6 | ~6s served vs 10–25s local |
+| The AI Gateway creates an inference table unasked | 6 | `support_agent_payload` |
 
 ## 6. What You Hand In
 
