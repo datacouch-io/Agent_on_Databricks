@@ -48,6 +48,13 @@ Everything is in one notebook. Your instructor has placed it in your workspace.
 2. Open the **`Agents-on-Databricks-Labs`** folder.
 3. Click **`Lab 1B - Minimal Agent`**.
 
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
 **If it isn't there**, import the `.ipynb` yourself — it is a standard Jupyter notebook:
 
 1. **Workspace** → your folder → **⋮** → **Import**.

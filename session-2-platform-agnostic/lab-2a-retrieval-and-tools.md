@@ -46,6 +46,13 @@ behind three small interfaces. [Lab 2B](lab-2b-adapter-swap.md) then swaps one o
 **To open it:** **Workspace** → `Agents-on-Databricks-Labs` → **`Lab 2A - Two Sources`**,
 then attach **Serverless**.
 
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
 **If it isn't there:** **Workspace** → **⋮** → **Import** → **File** → pick the `.ipynb`.
 
 > 💡 **`core.py` is a real file, not a cell.** Cell 3 uses `%%writefile` to write it to

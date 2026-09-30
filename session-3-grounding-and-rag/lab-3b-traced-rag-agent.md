@@ -40,6 +40,13 @@ those spans in **Unity Catalog Delta tables**, and then queries them in SQL.
 **To open it:** **Workspace** → `Agents-on-Databricks-Labs` →
 **`Lab 3B - Traced RAG Agent`**, attach **Serverless**.
 
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
 ---
 
 ## 3. Prerequisites

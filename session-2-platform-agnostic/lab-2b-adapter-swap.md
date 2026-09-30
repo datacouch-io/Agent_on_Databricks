@@ -38,6 +38,13 @@ not what most rooms expect, and it is the reason [Session 6](../session-6-evalua
 **To open it:** **Workspace** → `Agents-on-Databricks-Labs` →
 **`Lab 2B - Swap the Retriever`**, attach **Serverless**.
 
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
 > 💡 **This notebook is standalone.** It rebuilds the Lab 2A setup in cell 1 rather than
 > depending on that session still being alive. Cell 2 recreates `core.py` and prints a
 > hash — **compare it with the one Lab 2A printed.** If the file changed, the claim "we

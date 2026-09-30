@@ -40,6 +40,13 @@ questions whose correct answer you already know. *"It feels better"* is not a me
 **To open it:** **Workspace** → `Agents-on-Databricks-Labs` →
 **`Lab 3A - Vector Search Index`**, attach **Serverless**.
 
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+Nothing in this lab needs a cluster.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
 > 💡 **Cells 3, 4 and 5 are safe to re-run.** They check before they create. If your
 > instructor pre-provisioned the endpoint and index — which is normal for a class, because
 > an endpoint takes several minutes and is billed — those cells report what exists and move
