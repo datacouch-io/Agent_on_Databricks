@@ -1,223 +1,191 @@
 # Lab 7B — Canaries, Safe Rollback, and Agent Bricks
 
-**Session 7 · Operations and Multi-Agent Systems**
+**Session:** 7 — Operations and Multi-Agent Systems
+**Duration:** ~70 minutes
+**Where you work:** a Databricks notebook (Steps 1–4) and the console (Step 5)
+**Compute:** Serverless
 
-> ✅ **Tested end-to-end on Azure Databricks.** Steps 1–4 are three real model versions, real aliases, real predictions loaded from Unity Catalog, and a real promote and rollback.
->
-> ✅ **Step 5 is tested too**, on a workspace upgraded from trial to Premium. A Knowledge Assistant built on the Lab 3A index answered the grounded probe correctly — and **disclosed an `agent_only` document** on the ungrounded one, which the hand-built agent refuses. Both transcripts are in Step 5.
-
-## What you'll learn
-
-- Why callers should reference a **model alias**, never a version number.
-- How to canary a candidate against the incumbent by loading both from Unity Catalog.
-- That **a one-run canary is a coin flip** — the regression in this lab appears 2 times in 3.
-- That the regression you find is often not the one you went looking for.
-- How to roll back in one pointer move, and what you must record at promotion time to make that possible.
-- What a no-code Agent Bricks assistant inherits from your index — and what it does not.
-
-## What you'll do
-
-Register a second version of the Lab 6B agent with one line of its prompt loosened, alias the two versions champion and challenger, canary them, measure how reliably the regression reproduces, then promote and roll back. Finally, build the same capability as an Agent Bricks Knowledge Assistant and compare what each one will say.
-
-## Time & cost
-
-- **Time:** ~75 minutes. The repeat canary in Step 3 is ~6 minutes of model calls; Step 5 needs a Premium workspace.
-- **Cost:** one model registration plus roughly 12 agent predictions.
+> **Verified on 2026-09-30.** Every number and screenshot below is from a real run.
 
 ---
 
-## Before you start
+## 1. Lab Overview & Objectives
 
-- **Prior labs:** [6B](../session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) — `agents_labs.retail.support_agent` version 2 must exist and be `READY`. Step 5 also uses the [3A](../session-3-grounding-and-rag/lab-3a-vector-search-index.md) index.
-- **Workspace SKU:** Steps 1–4 run on a trial. **Step 5 needs Premium or Enterprise.**
-- **Environment:** Python 3.11 or 3.12 with `mlflow[databricks]`, `databricks-ai-search`, `databricks-sdk`, `openai`.
+[Lab 6B](../session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) registered a
+tuned agent. This lab asks the operational question: **how do you ship a change to it
+without finding out from a customer?**
 
-```bash
-export DATABRICKS_PROFILE=agents-labs
-export LAB_WAREHOUSE_ID=<your SQL warehouse id>
-```
+**By the end of this lab you will be able to:**
 
-Confirm the incumbent is there:
-
-```bash
-python session-7-operations-and-multi-agent/code/rollout.py status
-```
+1. Reference a model by **alias**, never a version number.
+2. Canary a candidate against the incumbent, **with a control column**.
+3. Explain why a canary needs more than one run — and why `N = 3` cannot rank two variants.
+4. Roll back by moving a pointer, and say what must be recorded at promotion time.
+5. Say what a no-code Agent Bricks assistant inherits from your index, and what it does not.
 
 ---
 
-## The idea in 60 seconds
+## 2. Files You Will Use
 
-```mermaid
-flowchart TB
-    V2["v2 — strict prompt"] --> AL["@champion"]
-    V3["v3 — 'just be helpful'"] --> CH["@challenger"]
-    AL --> CAN["canary:<br/>same probes, both aliases"]
-    CH --> CAN
-    CAN --> G{"grounding<br/>regressed?"}
-    G -->|"no — 2/2 both"| CAP{"anything else?"}
-    CAP --> R["capability claims<br/>0/3 vs 2/3"]
-    R --> RB["move @champion back<br/>to @previous"]
-```
+| # | File | Where | What it does |
+|---|---|---|---|
+| 1 | **`Lab 7B - Canary and Rollback`** | Workspace → `Agents-on-Databricks-Labs` | Steps 1–4. **14 cells** — 8 explaining, 6 to run. |
+| 2 | [`lab-7b-canary-and-rollback.ipynb`](../notebooks/lab-7b-canary-and-rollback.ipynb) | this repo, `notebooks/` | The same notebook with outputs saved. |
+| 3 | **`serving_agent_v3.py`** | *written by cell 2* | The loosened-prompt candidate. |
+
+**To open it:** **Workspace** → `Agents-on-Databricks-Labs` →
+**`Lab 7B - Canary and Rollback`**, attach **Serverless**.
+
+![The lab folder in your workspace](../artifacts/_shared/screenshots/workspace-lab-folder.png)
+
+**Attach compute.** Use the selector in the notebook toolbar and pick **Serverless**.
+
+![The notebook toolbar: Run all, and the Serverless compute selector](../artifacts/_shared/screenshots/notebook-toolbar-serverless.png)
+
+**Step 5 is in the console**, not the notebook — Agent Bricks has no REST API.
 
 ---
 
-## Step 1 — Register a candidate and name the versions
+## 3. Prerequisites
 
-**Goal:** stop callers from depending on version numbers.
+- [Lab 6B](../session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) — a
+  `READY` version of `agents_labs.retail.support_agent`.
+- **Premium or Enterprise** for Step 5.
 
-The candidate is [`code/serving_agent_v3.py`](code/serving_agent_v3.py). Diff it against the Lab 6B agent and the only functional change is three lines:
+---
+
+## 4. Step-by-Step Instructions
+
+### Step 1 — Register a candidate and name the versions (12 min)
+
+Run **cells 0–3**. Cell 2 writes `serving_agent_v3.py`; the only functional change from
+Lab 6B's agent is three lines:
 
 ```diff
--SYSTEM = ("You are a support agent for an office furniture retailer. Answer only from "
--          "the policy excerpts you retrieve. If they do not cover the question, say so. "
--          "Cite the document id you relied on, like [DOC-003].")
-+SYSTEM = ("You are a helpful support agent for an office furniture retailer. "
-+          "Use the policy excerpts you retrieve. Always give the customer a useful, "
-+          "confident answer. Cite a document id like [DOC-003] where you can.")
+-SYSTEM = ("You are a support agent … Answer only from the policy excerpts you
+-          retrieve. If they do not cover the question, say so. …")
++SYSTEM = ("You are a helpful support agent … Use the policy excerpts you retrieve.
++          Always give the customer a useful, confident answer. …")
 ```
 
-This is a realistic change, not a strawman. It is what gets requested after someone reads a week of refusals in the logs and asks for the agent to stop saying "I don't know". Retrieval is untouched: same index, same `k=2`, same `audience: customer` filter.
-
-```bash
-python session-7-operations-and-multi-agent/code/register_candidate.py
-```
-
-![Version 3 registered and the champion and challenger aliases set](../artifacts/lab-7b/screenshots/01-aliases.png)
+A realistic change, not a strawman — it is what gets requested after someone reads a week
+of refusals in the logs. Retrieval is untouched.
 
 ```console
-  registered agents_labs.retail.support_agent version 3
-  READY versions: [3, 2]   incumbent: v2   candidate: v3
+  registered v9
+  READY versions: [9, 8, 7, 4, 3, 2]
 
-  @champion   -> v2
-  @challenger -> v3
+  @champion   -> v8
+  @challenger -> v9
 
-  callers load 'models:/agents_labs.retail.support_agent@champion' and never a version number
+  callers load models:/agents_labs.retail.support_agent@champion and never a version number
 ```
 
-> 💡 **Note the `READY` filter.** The script picks the incumbent from versions whose `status == "READY"`. This workspace also holds a **version 1 stuck in `PENDING_REGISTRATION`** from an earlier failed attempt. A script that naively took "the highest version below the new one" would have aliased `@champion` to a model that cannot be loaded. Failed registrations do not disappear; they sit in the version list forever.
+> 💡 **Note the `READY` filter.** The cell picks the incumbent from versions whose
+> `status == "READY"`. This workspace also holds one stuck in `PENDING_REGISTRATION` from
+> an earlier failed attempt, and a script naively taking "the highest version below the new
+> one" would alias `@champion` to a model that cannot load. **Failed registrations linger
+> in the version list forever.**
 
 ---
 
-## Step 2 — Canary the challenger against the champion
+### Step 2 — Canary with two checks (15 min)
 
-**Goal:** compare two versions on the probes that matter, not the ones that are easy.
+Run **cell 4**. Three probes — one answerable, two whose answers live only in `DOC-006`
+(`audience: agent_only`).
 
-```bash
-python session-7-operations-and-multi-agent/code/canary.py
-```
+| Check | Asks |
+|---|---|
+| **grounding** | did it refuse when it had nothing to cite? |
+| **capability** | did it offer to do something it has no tool for? |
 
-Three probes. One is answerable from the customer-visible documents. **Two are not** — their answers live in `DOC-006`, which is tagged `audience: agent_only` and filtered out of retrieval, so the correct behaviour is to refuse.
-
-![Canary comparing champion and challenger across three probes](../artifacts/lab-7b/screenshots/02-canary-regression.png)
+The first is what everyone tests. The second is what matters here.
 
 ```console
                 refusals   promises    words
-  champion    2/2        0/3             107
-  challenger  2/2        0/3             373
-
-  grounding:  unchanged
-  capability claims: 0 -> 0
-  verbosity:  107 -> 373 words (3.5x)
+  champion    2/2        1/3             429
+  challenger  1/2        1/3             391
 ```
 
-**The grounding did not regress.** Both versions correctly refused both ungrounded probes. The hypothesis going in — that "always give a confident answer" would make the agent invent a refund limit — was simply wrong. Retrieval-grounded refusal turned out to be robust to that prompt edit.
-
-> ⚠️ **Gotcha: the first version of this canary reported `0/2` refusals for *both* models — and it was the detector that was broken, not the agents.**
+> ⚠️ **Gotcha — the first version of this refusal detector reported `0/2` for *both*
+> models, and the detector was wrong.**
 >
-> The original refusal test was a short substring list: `"couldn't find"`, `"do not cover"`, `"not specified"`. The champion actually said *"The provided policy excerpts **don't mention** a refund approval limit"* and the challenger said *"I **wasn't able to find** any information"*. Neither phrasing was in the list, so two correct refusals were scored as failures.
+> It was a short substring list: `"couldn't find"`, `"do not cover"`. The agents actually
+> said *"don't mention"* and *"wasn't able to find"*. Two correct refusals scored as
+> failures.
 >
-> This is [Lab 6A's](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) lesson arriving a second time: **a cheap judge fails in the direction of reporting problems that are not there.** Had the run been read at face value, the conclusion would have been "both versions hallucinate" and someone would have spent a day fixing an agent that was already correct.
->
-> The fixed detector is a deliberately wide regex, and the reasoning is in a comment in [`canary.py`](code/canary.py). Before you trust *any* automated check on agent output, feed it text you have read yourself and confirm it agrees with you.
-
-So the canary found nothing on the axis it was designed for. It found something on another axis. Look at the words column: **3.5× longer answers.** Reading those answers, the challenger volunteers things like:
-
-> I can escalate this to our customer resolutions team, who handle compensation decisions on a case-by-case basis… **Would you like me to escalate this for you?**
-
-The agent has exactly two capabilities: retrieve policy text, and look up an order summary. **It cannot escalate anything.** It has no tool for it, no queue to write to, and no team on the other end. A customer told "I've escalated this" by an agent that did nothing is a worse outcome than a refusal.
-
-This is why `canary.py` also runs a second regex, `CAPABILITY`, over every answer. Grounding asks *is this fact true?* Capability asks *is this offer real?* No groundedness scorer will catch the second one, because the sentence contains no factual claim to be ungrounded.
+> That is the [Lab 6A](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md)
+> lesson again: **a cheap judge fails in the direction of reporting problems that are not
+> there.** Feed any automated check text you have read yourself before you trust it.
 
 ---
 
-## Step 3 — Run the canary again. And again.
+### Step 3 — Run it again. And again. (15 min)
 
-**Goal:** find out whether your gate is measuring behaviour or luck.
-
-In Step 2 the capability check came back `0/3` for both. In the run before it, the same probe against the same version produced the escalation offer. Same model, same prompt, same `k`. So which is it?
-
-```bash
-python session-7-operations-and-multi-agent/code/canary_repeat.py
-```
-
-![The same probe repeated three times per alias, showing an intermittent regression](../artifacts/lab-7b/screenshots/03-canary-nondeterminism.png)
+Run **cell 5**. One probe, three times per alias.
 
 ```console
-  probe: What discount can you give me if I complain about a late delivery?
-  runs:  3 per alias
+  champion    run 1   … answered  PROMISES "escalate this to"
+  champion    run 2   … answered  clean
+  champion    run 3   … answered  PROMISES "escalate this for"
 
-  champion    run 1    56 words  refused  clean
-  champion    run 2    60 words  refused  clean
-  champion    run 3    57 words  refused  clean
-
-  challenger  run 1   115 words  refused  clean
-  challenger  run 2   176 words  refused  PROMISES "escalate this for"
-  challenger  run 3   140 words  refused  PROMISES "escalate this for"
+  challenger  run 1   … answered  clean
+  challenger  run 2   … answered  clean
+  challenger  run 3   … answered  PROMISES "escalate this to"
 
                capability claims   mean words
-  champion    0/3                           58
-  challenger  2/3                          144
-
-  A pass/fail gate on ONE run of the challenger would have said FAIL with
-  probability 2/3.
+  champion    2/3                          165
+  challenger  1/3                          180
 ```
 
-Read the champion column first. **56, 60, 57 words — and clean every time.** The strict prompt is not just safer on average, it is *stable*. The challenger ranges 115–176 words and offers a capability it does not have in two runs out of three.
+**The canary found a real defect.** The agent offers to *"escalate this to"* a team it
+cannot reach. It has exactly two capabilities — retrieve policy text, look up an order.
+Escalation is not one of them, and a customer told *"I've escalated this"* by an agent that
+did nothing is worse off than one that was refused.
 
-Two conclusions, and the second is the operational one:
-
-1. The regression is real. A one-in-three chance of promising a customer an escalation that never happens is not shippable.
-2. **A single-run canary gate would have passed this change one time in three.** Whether the release went out would have depended on which sample the gate happened to draw. That is not a gate; it is a coin weighted 2:1.
-
-> ⚠️ **Do not build a release gate on n=1.** Non-determinism is not noise you can average away later — it is the property you are gating on. If a behaviour appears in 33% of runs it will appear in 33% of customer conversations. Set your probe count from the rate you are willing to ship, and record the rate rather than a pass/fail bit.
+> 🚨 **But read the champion column. This is not a regression — the incumbent does it too,
+> more often this run.**
 >
-> Three runs is enough to see this effect and far too few to bound it. `LAB_CANARY_RUNS=10` is a more honest number and costs ten predictions.
+> The prompt change did not cause it. Both variants do it, at rates that swap places
+> between runs.
+>
+> **This is what the control column is for.** A canary running only the challenger would
+> have reported the escalation promise, blamed the prompt change, and reverted it —
+> leaving the defect shipped and the improvement lost.
+
+> ⚠️ **And the rates are unstable.** An earlier build of this course measured champion
+> `0/3` and challenger `2/3` — the **opposite ordering**. Three runs tells you the
+> behaviour **exists**; nothing reliable about which variant is worse.
+>
+> If a behaviour appears in a third of runs, it appears in a third of customer
+> conversations. Set `N = 10` for a number you could defend, and treat any ordering from
+> `N = 3` as noise.
+
+> 💡 **No groundedness scorer would catch this.** *"I can escalate this for you"* contains
+> no factual claim to be ungrounded. It is a **capability** claim, and you have to test for
+> it deliberately.
 
 ---
 
-## Step 4 — Promote, then roll back
+### Step 4 — Promote, then roll back (10 min)
 
-**Goal:** make the rollback a pointer move.
-
-```bash
-python session-7-operations-and-multi-agent/code/rollout.py promote
-python session-7-operations-and-multi-agent/code/rollout.py rollback
-```
-
-![Promote records @previous, then rollback restores @champion without touching the caller URI](../artifacts/lab-7b/screenshots/04-promote-rollback.png)
+Run **cell 6**.
 
 ```console
-### rollout.py promote
-  recorded @previous  -> v2
-  promoted @champion  -> v3
-    @champion    -> v3
-    @challenger  -> v3
-    @previous    -> v2
+  before                after promote          after rollback
+    @champion   -> v8     @champion   -> v9      @champion   -> v8
+    @challenger -> v9     @challenger -> v9      @challenger -> v9
+    @previous   -> v7     @previous   -> v8      @previous   -> v8
 
-### rollout.py rollback
-  rolled back @champion  v3 -> v2
-    @champion    -> v2
-    @challenger  -> v3
-    @previous    -> v2
-
-    caller URI (never changes): models:/agents_labs.retail.support_agent@champion
+  caller URI, unchanged throughout: models:/agents_labs.retail.support_agent@champion
 ```
 
-Three things to take from this:
+**The caller URI never changed.** Every consumer loads `@champion`. Promotion and rollback
+are invisible to them — no redeploy, no config push, no coordinated release.
 
-**The caller URI never changed.** Every consumer loads `models:/agents_labs.retail.support_agent@champion`. Promotion and rollback are invisible to them — no redeploy, no config push, no coordinated release.
-
-**`@previous` is written at promotion time, not at rollback time.** This is the part teams skip. If you only set `@champion`, then at 02:00 during an incident "roll back" means "find out what was running before", and the answer lives in someone's memory or a chat scrollback. Recording the outgoing version *as you replace it* is what makes the rollback a single command:
+**`@previous` is written at promotion time, not at rollback time.** This is the part teams
+skip. If you only set `@champion`, then at 02:00 during an incident "roll back" means
+"find out what was running before", and the answer lives in someone's memory:
 
 ```python
 if ch:
@@ -225,13 +193,16 @@ if ch:
 c.set_registered_model_alias(UC_MODEL, "champion", cl)
 ```
 
-**`@challenger` deliberately still points at v3.** The candidate is not deleted on rollback. The prompt change was well-motivated — the refusals someone complained about are real. What failed was this *implementation* of it. Keeping v3 aliased means the next attempt starts from a named artefact with a canary record attached, rather than from scratch.
+**`@challenger` still points at the candidate.** The prompt change was well motivated.
+Keeping it aliased means the next attempt starts from a named artefact with a canary record
+attached.
 
-> 💡 **Aliases are Unity Catalog objects, so they are governed and audited.** Who moved `@champion` and when is in the UC audit log. This is the practical difference between an alias and a config file in a repo.
+> 💡 **Aliases are Unity Catalog objects**, so who moved `@champion` and when is in the
+> audit log. That is the practical difference between an alias and a config file in a repo.
 
 ---
 
-## Step 5 — Agent Bricks, and what it does not inherit
+### Step 5 — Agent Bricks, and what it does not inherit (20 min)
 
 **Goal:** build the same capability the no-code way, and find out what you gave up.
 
@@ -366,49 +337,47 @@ Agent Bricks is a genuinely good way to get a grounded assistant standing up fas
 
 ---
 
-## Step 6 — Leave the aliases in a sane state
+### Step 6 — Leave the aliases in a sane state (3 min)
 
-```bash
-python session-7-operations-and-multi-agent/code/rollout.py status   # expect @champion -> v2
-```
-
-`@champion` must point at v2 for the capstone. The model and its aliases are removed with the catalog at course end — see [`TEARDOWN.md`](../TEARDOWN.md).
+Re-run **cell 6** and confirm `@champion` points at the version you want serving. The
+capstone assumes a working `@champion`. The model and its aliases are removed with the catalog at course end — see [`TEARDOWN.md`](../TEARDOWN.md).
 
 ---
 
-## What you learned
+## 5. What You Learned
 
 | You saw… | in Step | proof |
 |---|---|---|
 | Callers reference an alias, never a version | 1, 4 | one URI across promote and rollback |
-| Failed registrations linger in the version list | 1 gotcha | v1 stuck `PENDING_REGISTRATION` |
-| The prompt change did **not** break grounding | 2 | refusals 2/2 for both versions |
+| Failed registrations linger in the version list | 1 | one stuck `PENDING_REGISTRATION` |
 | A narrow refusal detector invented a regression | 2 gotcha | `0/2` for two correct refusals |
-| The real regression was **hallucinated capability** | 2 | "Would you like me to escalate this for you?" |
-| Groundedness scorers cannot catch a false offer | 2 | no factual claim to be ungrounded |
-| Verbosity tripled on the same probes | 2 | 107 → 373 words |
-| The regression is intermittent | 3 | **2/3** runs, champion 0/3 |
-| A one-run gate would pass it 1 time in 3 | 3 | stated in the script output |
-| The strict prompt was also more *stable* | 3 | champion 56/60/57 words |
-| Rollback needs `@previous` written at promote time | 4 | `recorded @previous -> v2` |
+| The agent promises a capability it does not have | 3 | *"escalate this to"* |
+| No groundedness scorer catches that | 3 | no factual claim to be ungrounded |
+| **The incumbent does it too — it is not a regression** | 3 | champion 2/3 vs challenger 1/3 |
+| The control column is what tells you that | 3 | challenger-only would have blamed the change |
+| Three runs cannot rank two variants | 3 | an earlier build measured 0/3 vs 2/3 |
+| Rollback needs `@previous` written at promote time | 4 | `@previous -> v8` |
 | Aliases are governed UC objects | 4 | audit log records who moved them |
 | The Agents nav entry exists but the page does not, on trial | 5 | `/ml/bricks` → Page not found |
-| Agent Bricks has no REST API | 5 | four 404s |
-| A brick on the same index answers the grounded probe correctly | 5 | the 60-day seating window |
+| A brick on the same index answers the grounded probe | 5 | the 60-day seating window |
 | It **disclosed an `agent_only` document** | 5 | `DOC-006-C00` quoted verbatim |
 | The brick exposes no metadata filter | 5 | Settings is Instructions + Description |
 | A query-time filter is a convention, not a control | 5 | a second consumer did not inherit it |
+
+## 6. What You Hand In
+
+The **repeat** table from cell 5, with both columns. Then one sentence: *what would you have concluded if the champion column had not been there?*
 
 ## Evidence
 
 - [`artifacts/lab-7b/evidence/01-register-and-alias.txt`](../artifacts/lab-7b/evidence/01-register-and-alias.txt) — registration and initial aliases.
 - [`artifacts/lab-7b/evidence/02-canary.txt`](../artifacts/lab-7b/evidence/02-canary.txt) — all six answers in full.
-- [`artifacts/lab-7b/evidence/03-canary-repeat.txt`](../artifacts/lab-7b/evidence/03-canary-repeat.txt) — the 2/3 reproduction rate.
+- [`artifacts/lab-7b/evidence/03-canary-repeat.txt`](../artifacts/lab-7b/evidence/03-canary-repeat.txt) — an **earlier** build's repeat, measuring champion `0/3` and challenger `2/3`. Compare it with your own run: the ordering is not stable, which is Step 3's point.
 - [`artifacts/lab-7b/evidence/04-promote-rollback.txt`](../artifacts/lab-7b/evidence/04-promote-rollback.txt) — alias state at each stage.
 - [`artifacts/lab-7b/evidence/05-agent-bricks-availability.txt`](../artifacts/lab-7b/evidence/05-agent-bricks-availability.txt) — the API and serving probes on the trial workspace.
 - [`artifacts/lab-7b/evidence/06-agent-bricks-tested.txt`](../artifacts/lab-7b/evidence/06-agent-bricks-tested.txt) — the Knowledge Assistant configuration, both probes, and the SQL confirming the disclosed chunk is `agent_only`.
 
-Source: [`code/register_candidate.py`](code/register_candidate.py), [`code/canary.py`](code/canary.py), [`code/canary_repeat.py`](code/canary_repeat.py), [`code/rollout.py`](code/rollout.py), [`code/serving_agent_v3.py`](code/serving_agent_v3.py).
+Source: [`notebooks/lab-7b-canary-and-rollback.ipynb`](../notebooks/lab-7b-canary-and-rollback.ipynb).
 
 ---
 
