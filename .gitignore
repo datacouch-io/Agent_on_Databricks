@@ -8,3 +8,5 @@ build/
 .venv312/
 building-reliable-conversational-agents-with-genie-en_us-*/
 building-reliable-conversational-agents-with-genie-en_us-*.zip
+mlflow.db
+mlruns/
