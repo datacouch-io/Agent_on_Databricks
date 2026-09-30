@@ -151,6 +151,18 @@ billed, separately managed, and the endpoint is the expensive half.
   READY   indexed rows: 15
 ```
 
+**Confirm it in the console** — Catalog Explorer shows the index as a first-class Unity
+Catalog object, not a side artifact:
+
+![The index in Catalog Explorer: Online, Delta Sync, 15 rows indexed, with its source table and MCP URL](../artifacts/lab-3a/screenshots/02-index-catalog-explorer.png)
+
+| Field | Value | Why it matters |
+|---|---|---|
+| Index status | **Online** | it will answer queries |
+| Sync schedule | **Triggered** | it syncs when you ask |
+| Rows indexed | **15** | if this is 0, the sync has not run — **your first debugging stop** |
+| MCP server URL | `.../api/2.0/mcp/ai-search/...` | the index is *already* an MCP tool, which is [Lab 5B](../session-5-tools-and-governance/lab-5b-mcp-and-access-control.md) |
+
 **The line worth understanding** is in the index definition:
 
 ```python
@@ -258,6 +270,8 @@ thing keeping it from customers is that **this** caller remembered to pass
 | Managed embeddings remove the staleness problem | 3 | no embedding code anywhere |
 | Retrieval is tested with known answers | 4 | **4/4 passed** |
 | The Lab 2B failure case now works | 4 | `0.0000` → `DOC-001` top-1 |
+| Rows indexed is the first debugging stop | 3 | `15` in Catalog Explorer |
+| The index is already exposed as an MCP tool | 3 | MCP server URL on the index page |
 | The filter keeps internal docs out of the context | 5 | `DOC-006` unreachable as customer |
 | …but it lives in the caller, not in a grant | 6 | [7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) discloses it from this index |
 

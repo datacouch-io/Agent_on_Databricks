@@ -159,6 +159,11 @@ Run **cell 5** (the agent), then **cell 6** (the span tree).
 > Teams routinely spend a sprint optimising retrieval latency for an agent whose retrieval
 > is half a second. The trace tells you that in one glance, and nothing else does.
 
+**The same trace in the console.** The CLI view is good for scripting; this is what you
+will actually open when something goes wrong at 2am, and it reads the *same* UC tables:
+
+![The trace detail: span tree with per-span timings, and the agent's input and output](../artifacts/lab-3b/screenshots/03-trace-span-tree-ui.png)
+
 ---
 
 ### Step 4 — The retriever span holds the evidence (8 min)
@@ -177,6 +182,8 @@ Run **cell 7**.
   DOC-005-C00  DOC-005  score=0.5521  Billing, invoices and payment terms
       Standard and plus tier customers are charged at the point of order...
 ```
+
+![The RETRIEVER span showing audience=customer, k=3, the query, and each chunk with its score](../artifacts/lab-3b/screenshots/04-retriever-span-ui.png)
 
 **Everything needed to judge grounding is in one place:**
 
@@ -247,6 +254,7 @@ nothing?"* is a `WHERE`, not a log grep.
 | **87% of the latency was the model** | 3 | 13.56s total, 1.73s in tools |
 | The searched query is not the user's question | 4 | *"delivery time and late delivery options"* |
 | One of three retrieved chunks was noise | 4 | a billing doc on a delivery question |
+| The console reads the same UC tables | 3 | trace detail view |
 | Traces are queryable Delta tables | 5 | six tables, one SQL query |
 | The trace schema is OpenTelemetry | 5 gotcha | `status.code`, not `status_code` |
 
