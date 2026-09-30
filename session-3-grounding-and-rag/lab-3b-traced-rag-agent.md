@@ -179,6 +179,29 @@ python code/inspect_trace.py
 
 ---
 
+### The same trace in the console
+
+The CLI view is good for scripting. The console is what you will actually use when something goes wrong at 2am, and it is reading the **same** Unity Catalog tables:
+
+![The trace detail: span tree with per-span timings, and the agent's input and output](../artifacts/lab-3b/screenshots/03-trace-span-tree-ui.png)
+
+The span tree carries the timing breakdown — `answer` 17.76s, of which `get_order` is 1.16s and `search_policy` is 3.14s. **Most of the time is the model, not the tools.** That is worth knowing before anyone optimises the retrieval.
+
+Click the `search_policy` span and you get the retrieval, exactly as it happened:
+
+![The RETRIEVER span showing audience=customer, k=3, the query, and each retrieved chunk with its score](../artifacts/lab-3b/screenshots/04-retriever-span-ui.png)
+
+Everything needed to judge grounding is there:
+
+- **Inputs** — `audience: customer`, `k: 3`, and the query the agent *actually* sent, which is usually not the user's words.
+- **Outputs** — each chunk with its `doc_id`, its `score` (0.5984, 0.5677, …) and its text.
+
+> 💡 **This view is the answer to "did it make that up?"** If a claim in the answer is not in one of these chunks, the model invented it. You do not need to reason about the prompt — you can read the evidence the model was given.
+
+> ⚠️ **Note the `audience: customer` input.** That filter is the only thing keeping `agent_only` documents out of customer answers, and it lives in the *caller*, not in a grant. [Lab 7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) Step 5 points a second, perfectly legitimate consumer at this same index — one that has no filter control — and it discloses an internal document. Remember where this boundary actually is.
+
+---
+
 ## Step 5 — Clean up
 
 Nothing to tear down. The trace tables live in `agents_labs.retail` and are removed with the catalog at the end of the course.
@@ -198,6 +221,9 @@ Nothing to tear down. The trace tables live in `agents_labs.retail` and are remo
 | A citation can be corroborated from your own spans | 4 | `[DOC-003]` present in the retrieval span |
 | The model retrieves on its paraphrase, not your words | 4 | `"delivery time and late delivery options"` |
 | Irrelevant chunks enter context silently | 4 | DOC-005 at rank 3, 0.5521 |
+| The console reads the same UC tables as the CLI | 4 | trace detail view |
+| Most latency is the model, not the tools | 4 | 17.76s total, 3.14s retrieval |
+| The retriever span holds the grounding evidence | 4 | doc_id, score and text per chunk |
 
 ## Evidence
 

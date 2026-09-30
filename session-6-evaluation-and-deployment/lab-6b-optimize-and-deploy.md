@@ -209,6 +209,22 @@ print(e.state.ready, e.state.config_update)
 
 > ⚠️ **Gotcha — that enum does not start with `READY`.** It prints as `EndpointStateReady.READY`, so a polling loop written as `case "$s" in READY*)` never matches and spins until it times out. Compare against the enum, or match on the substring.
 
+**The endpoint in the console:**
+
+![The serving endpoint page: Ready, its invocations URL, the AI Gateway inference table, and Version 2 taking 100% of traffic](../artifacts/lab-6b/screenshots/05-serving-endpoint-ui.png)
+
+| | |
+|---|---|
+| State | **Ready**, `Version 2`, 100% of traffic |
+| Compute | CPU 4 GB, **Small**, 0–4 concurrency |
+| Inference tables | `agents_labs.retail.support_agent_payload` |
+
+> 💡 **You got an inference table you did not ask for.** The AI Gateway automatically logs every request and response to `support_agent_payload` in Unity Catalog. That is genuinely useful — it is a production dataset for the next round of [Lab 6A](lab-6a-evaluation-dataset.md) evaluation, drawn from real traffic rather than cases you imagined.
+>
+> It is also a **governed table containing whatever your users typed**, created without an explicit decision. Know it exists, check who has `SELECT` on it, and include it in your retention planning.
+
+---
+
 ### Query it
 
 ```bash
@@ -286,6 +302,7 @@ The registered model and its aliases go with the catalog at course end. See [`TE
 | The caller loses every client library | 5 | one authenticated `POST` |
 | Local timings are a poor latency baseline | 5 | ~6s served vs 10–25s local |
 | The readiness enum is not the string `READY` | 5 gotcha | `EndpointStateReady.READY` |
+| The AI Gateway creates an inference table unasked | 5 | `support_agent_payload` |
 
 ## Evidence
 

@@ -161,6 +161,23 @@ print(st["ready"], st["detailed_state"], st["indexed_row_count"])
 
 ---
 
+**Confirm it in the console.** Catalog Explorer shows the index as a first-class Unity Catalog object, not a side artifact:
+
+![The index in Catalog Explorer: Online, Delta Sync, 15 rows indexed, with its source table and serving endpoint](../artifacts/lab-3a/screenshots/02-index-catalog-explorer.png)
+
+| Field | Value | Why it matters |
+|---|---|---|
+| Index status | **Online** | it will answer queries |
+| Index type | **Delta Sync** | it tracks the source table; you do not re-embed by hand |
+| Source table | `agents_labs.retail.support_chunks` | the Change Data Feed source from Step 2 |
+| Sync schedule | **Triggered** | it syncs when you ask, not continuously — cheaper, and you control when |
+| Rows indexed | **15** | the 15 chunks from Step 1. If this is 0, the sync has not run |
+| MCP server URL | `.../api/2.0/mcp/ai-search/...` | the index is *already* an MCP tool, which is [Lab 5B](../session-5-tools-and-governance/lab-5b-mcp-and-access-control.md) |
+
+> 💡 **"Rows indexed" is your first debugging stop.** A retrieval that returns nothing is almost always a sync that has not completed, not a bad query. Check this number before you touch the query.
+
+---
+
 ## Step 4 — Prove it retrieves, with known answers
 
 **Goal:** never build an agent on an unverified index.
@@ -237,7 +254,10 @@ The endpoint is the part that costs money while idle. The Delta tables are reuse
 | `TRIGGERED` leaves the index stale until synced | 3 gotcha | no refresh without `index.sync()` |
 | Retrieval is verified with known answers, not vibes | 4 | 4/4 passed, scores shown |
 | Embeddings solve the paraphrase that beat keywords | 4 | "send it back" → DOC-001 |
-| The filter is where governance is enforced | 5 | `agent_only` results only |
+| Rows indexed is the first debugging stop | 3 | `15` in Catalog Explorer |
+| The index is already exposed as an MCP tool | 3 | MCP server URL on the index page |
+| The filter is where this agent enforces audience | 5 | `agent_only` results only |
+| …but it lives in the caller, not in a grant | 5 | [7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) discloses `DOC-006` from this index |
 
 ## Evidence
 

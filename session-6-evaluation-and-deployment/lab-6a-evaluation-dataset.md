@@ -154,6 +154,23 @@ evaluate(data=CASES, predict_fn=predict_fn,
 
 ---
 
+**The same run in the console.** `mlflow.genai.evaluate()` writes an evaluation run you can open, and this is where most teams will read their results:
+
+![The evaluation run: Correctness 100% pass, Relevance 100% pass, Retrieval 20%, with per-trace pass and fail](../artifacts/lab-6a/screenshots/02-evaluation-scorers-ui.png)
+
+```
+  Correctness  PASS 100%      Relevance  PASS 100%      Retrieval  20%
+```
+
+Two things to notice before Step 4 takes them apart:
+
+- The headline is **three green-looking numbers and one bad one**, which is precisely the shape that gets a screenshot pasted into a status update.
+- The per-trace rows underneath are where the actual information is. Correctness `Pass` on every row and Retrieval `Fail` on most is a **retrieval** story, not a correctness one — the agent is getting the right answer despite its retrieval, not because of it.
+
+> ⚠️ **The `Error 3` count next to Correctness is not a model failure.** Those are scorer executions that could not run — in this course's first attempt, `databricks-agents` was missing because the environment was Python 3.14. A scorer that *errors* is not a scorer that *passed*, and the aggregate quietly excludes it. Always read the error column next to the percentage.
+
+---
+
 ## Step 4 — Read the rationales, because the judge is also a system
 
 **Goal:** learn not to trust a score you have not audited.
@@ -209,6 +226,8 @@ Nothing to remove. Traces and results live in `agents_labs.retail`.
 | The judge can be wrong about a correct answer | 4 | correct refusal scored non-compliant, twice |
 | Fix the test when the test is what failed | 4 gotcha | split conflicting guidelines per scorer |
 | Failed runs pollute the experiment | 6 gotcha | `err` rows from the 3.14 attempt persist |
+| The console headline hides the real story | 3 | 100/100/20 with per-row detail beneath |
+| A scorer that **errors** is not a scorer that passed | 3 | `Error 3` beside Correctness |
 
 ## Evidence
 

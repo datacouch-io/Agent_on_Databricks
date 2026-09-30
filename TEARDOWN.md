@@ -43,6 +43,7 @@ it. The full inventory inside `agents_labs.retail`, for the record:
 | Vector index | `support_chunks_idx` |
 | Registered models | `support_agent` (v1–v3, aliases `@champion` `@challenger` `@previous`), `returns_adjudicator` (v1, `@champion`) |
 | Trace tables | `<experiment_id>_otel_{spans,logs,metrics,annotations}`, one set per traced experiment |
+| Inference table | `support_agent_payload` — created automatically by the AI Gateway when the agent was deployed; contains real request and response payloads |
 
 Nothing else in that metastore was touched.
 
