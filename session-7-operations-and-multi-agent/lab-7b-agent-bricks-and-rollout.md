@@ -4,7 +4,7 @@
 
 > ✅ **Steps 1–4 tested end-to-end on Azure Databricks.** Three model versions, real aliases, real predictions loaded from Unity Catalog, real promote and rollback.
 >
-> ⚠️ **Step 5 (Agent Bricks) is a walkthrough, not an exercise.** Agent Bricks has no REST API and provisions a Model Serving endpoint underneath, which a trial workspace refuses. The probe output proving both is in Step 5. Nothing in that step is presented as tested.
+> ⚠️ **Step 5 (Agent Bricks) is a walkthrough, not an exercise.** Agent Bricks has no REST API, its UI page does not resolve on a trial workspace, and it provisions a Model Serving endpoint underneath, which a trial also refuses. Step 5 shows all three. Nothing in that step is presented as tested.
 
 ## What you'll learn
 
@@ -247,10 +247,17 @@ c.set_registered_model_alias(UC_MODEL, "champion", cl)
     Please contact your organization admin or Databricks support.
 ```
 
-Two independent blockers:
+And the UI says the same thing. The **Agents** entry is present in the AI/ML section of the left nav, but opening it lands on `/ml/bricks`, which does not exist on this workspace:
 
-1. **No REST API.** Agent Bricks is configured in the workspace UI only. There is nothing to script, which also means nothing to put in a lab that runs from a terminal.
-2. **It needs Model Serving.** Every Agent Bricks agent is backed by a serving endpoint, and a trial workspace refuses to create one — the same wall [Lab 6B](../session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) Step 5 hit.
+![The Agents page in the left nav resolving to Page not found on a trial workspace](../artifacts/lab-7b/screenshots/06-agent-bricks-page-not-found.png)
+
+> 💡 **A nav entry is not a feature.** The link is rendered from the static navigation, not from what the workspace has provisioned, so it appears whether or not Agent Bricks is available to you. If you are checking whether a workspace can run this step, open the page — do not go by the sidebar.
+
+Three independent blockers:
+
+1. **The UI page does not resolve** on a trial workspace, as above.
+2. **No REST API.** Agent Bricks is configured in the workspace UI only. There is nothing to script, which also means nothing to put in a lab that runs from a terminal.
+3. **It needs Model Serving.** Every Agent Bricks agent is backed by a serving endpoint, and a trial workspace refuses to create one — the same wall [Lab 6B](../session-6-evaluation-and-deployment/lab-6b-optimize-and-deploy.md) Step 5 hit.
 
 **What Agent Bricks gives you**, for an instructor to demo on a Premium workspace:
 
@@ -306,6 +313,7 @@ python session-7-operations-and-multi-agent/code/rollout.py status   # expect @c
 | The strict prompt was also more *stable* | 3 | champion 56/60/57 words |
 | Rollback needs `@previous` written at promote time | 4 | `recorded @previous -> v2` |
 | Aliases are governed UC objects | 4 | audit log records who moved them |
+| The Agents nav entry exists but the page does not | 5 | `/ml/bricks` → Page not found |
 | Agent Bricks has no REST API | 5 | four 404s |
 | Agent Bricks needs serving, blocked on trial | 5 | `not available for trial workspaces` |
 
