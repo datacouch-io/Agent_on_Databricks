@@ -50,3 +50,12 @@
   --------------------------------------------------------------
   baseline     14      24.8s          19.4s         n/a         
   tuned        7       22.1s          17.5s         n/a         
+# Lab 6B evidence — registration succeeded, serving blocked by the trial SKU
+# Captured 2026-09-30T02:17:33Z
+
+--- registered model versions ---
+  version 2  status=READY
+  version 1  status=PENDING_REGISTRATION
+
+--- deploy to Model Serving ---
+  NotFound: Model serving is not available for trial workspaces. Please contact your organization admin or Databricks support.
