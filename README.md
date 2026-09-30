@@ -18,7 +18,7 @@ The workspace began as a **trial** and was upgraded to **Premium** to finish the
 | **3 · Grounding and RAG** | [3A — Vector Search Index](session-3-grounding-and-rag/lab-3a-vector-search-index.md) | **Notebook.** Delta Sync, managed embeddings, CDF + PK, and **4/4 known-answer retrieval checks**. | ✅ live · notebook |
 | | [3B — A Traced RAG Agent](session-3-grounding-and-rag/lab-3b-traced-rag-agent.md) | **Notebook.** Traces as UC Delta tables you query in SQL — and **87% of the latency turns out to be the model**. | ✅ live · notebook |
 | **4 · Genie** | [4A — Build, Curate and Measure a Genie Agent](session-4-genie/lab-4a-genie-space.md) | **Console.** Benchmarks with ground-truth SQL, the Knowledge Store, and knowledge mining. Curation measured: **0% → 100%**. | ✅ live |
-| | [4B — Genie Inside an Agent](session-4-genie/lab-4b-genie-in-an-agent.md) | Genie as one tool among several; the agent chooses its own questions. | ✅ live |
+| | [4B — Genie Inside an Agent](session-4-genie/lab-4b-genie-in-an-agent.md) | **Notebook.** Genie as one tool among several — and the 4A curation is **inherited** by a consumer that knows nothing about it. | ✅ live · notebook |
 | **5 · Tools and governance** | [5A — A Governed UC Function](session-5-tools-and-governance/lab-5a-governed-uc-function.md) | The function *is* the tool: signature as schema, `COMMENT` as description, `GRANT` as access control. | ✅ live |
 | | [5B — MCP and Access Control](session-5-tools-and-governance/lab-5b-mcp-and-access-control.md) | Identity-filtered tool discovery; two identities, two tool lists. | ✅ live |
 | **6 · Evaluation and deployment** | [6A — An Evaluation Dataset](session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) | A baseline — and the discovery that **both guideline failures were judge defects**. | ✅ live |
@@ -48,6 +48,7 @@ The labs are not independent exercises. Each one answers a question the previous
 - **7A**'s supervisor needs two delegations to reach the DOC-007 fit-out exception. The **capstone** grader awards points for retrieval good enough to surface it in one.
 - **3A** filters retrieval to `audience: customer`. **7B** points a no-code Agent Bricks assistant at that same index and it discloses `DOC-006`, an `agent_only` document — because the filter lived in the caller, not in a grant.
 - **4A** benchmarks Genie and finds it **0% accurate** on a question whose prose answer looked perfect — three reasonable assumptions, none of them yours. Curation moves it to 100%, and the question is never reworded.
+- **4B** then proves that curation is **inherited**: a notebook that knows nothing about the console work gets all three rules. Put beside 3A → 7B, where a caller-side filter is *not* inherited and leaks a document, it is the same lesson from both directions.
 
 Two lessons arrive repeatedly, from different directions.
 
