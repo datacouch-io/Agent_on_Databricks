@@ -1,5 +1,28 @@
 # Teardown
 
+> ✅ **Executed on 2026-09-30.** Everything below was carried out and verified:
+> no Databricks workspace remains, `rg-agents-on-databricks` is deleted, and the
+> `agents_labs` catalog is dropped from the shared metastore. The 11 pre-existing
+> catalogs (`dbacademy*`, `bread_academy`, `demo-catalog`, …) were left untouched.
+>
+> **Order used**, which matters:
+> 1. Serving endpoints, Vector Search endpoints and indexes, SQL warehouse
+> 2. `agents_labs` catalog (force), external location, storage credential
+> 3. Secret scope, service principals
+> 4. Metastore assignment
+> 5. Azure resource group
+>
+> The Agent Bricks endpoint (`ka-b233b9d0-endpoint`) refused a direct delete —
+> *"Please delete the tile to delete all associated endpoints"* — and went with the
+> workspace. **One Agent Bricks agent creates two endpoints**, so budget for that.
+>
+> Local: the `agents-labs`, `agents-account` and `agents-restricted` profiles were
+> removed from `~/.databrickscfg` (a timestamped backup was written alongside it).
+> The `.venv` and `.venv312` directories are gitignored and were left in place.
+
+---
+
+
 Everything created for building these labs, and how to remove it.
 The labs themselves are parameterised — they do not depend on any of this.
 
