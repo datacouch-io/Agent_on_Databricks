@@ -14,6 +14,12 @@ def _split_statements(text: str) -> list[str]:
     drop -- comment lines. A naive text.split(";") corrupts any statement whose
     data contains a semicolon, which policy prose very often does.
     """
+    # Strip -- comments FIRST. Doing it after splitting means an apostrophe in
+    # prose ("the agent's identity") opens a phantom string literal and the
+    # splitter then ignores every semicolon after it, silently returning the
+    # whole file as one statement.
+    text = "\n".join(l for l in text.splitlines() if not l.strip().startswith("--"))
+
     out, buf, in_str = [], [], False
     i = 0
     while i < len(text):
@@ -31,13 +37,7 @@ def _split_statements(text: str) -> list[str]:
         i += 1
     out.append("".join(buf))
 
-    cleaned = []
-    for chunk in out:
-        lines = [l for l in chunk.splitlines() if not l.strip().startswith("--")]
-        c = "\n".join(lines).strip()
-        if c:
-            cleaned.append(c)
-    return cleaned
+    return [c for c in (chunk.strip() for chunk in out) if c]
 
 stmts = _split_statements(src)
 for i, s in enumerate(stmts, 1):
