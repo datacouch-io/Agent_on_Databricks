@@ -47,7 +47,26 @@ and the tracing setup from [Lab 3B](../session-3-grounding-and-rag/lab-3b-traced
 
 ---
 
-## 3. The interface
+## 3. Prerequisites
+
+- **All seven sessions completed.** The capstone reuses the catalog, the index, the UC
+  function and the tracing setup you built along the way.
+- `SELECT` on `agents_labs.retail`, `EXECUTE` on `get_order_summary`, and access to the
+  `agents-labs-vs` Vector Search endpoint.
+- **Serverless** compute.
+- A SQL warehouse — Unity Catalog trace storage needs one, and G7 checks for it.
+
+**You do not need** Premium: nothing in the capstone deploys to Model Serving.
+
+| If you skipped… | you will fail |
+|---|---|
+| [Lab 3A](../session-3-grounding-and-rag/lab-3a-vector-search-index.md) | G2 — no index to retrieve from |
+| [Lab 3B](../session-3-grounding-and-rag/lab-3b-traced-rag-agent.md) | G7 — traces land in legacy storage |
+| [Lab 5A](../session-5-tools-and-governance/lab-5a-governed-uc-function.md) | G1 — no `get_order_summary` |
+
+---
+
+## 4. The interface
 
 Your notebook must define exactly one function:
 
@@ -68,7 +87,7 @@ To grade yourself: open **`Capstone-Grader`** and **Run all**.
 
 ---
 
-## 4. The rubric — 80/100 passes
+## 5. The rubric — 80/100 passes
 
 | | Criterion | Points | How it is checked |
 |---|---|---|---|
@@ -88,7 +107,7 @@ is weighted so over-blocking costs you.**
 
 ---
 
-## 5. Suggested order of work
+## 6. Suggested order of work
 
 1. **Wire the two tools first** and test them directly, before any model is involved.
    `get_order_summary` returns `revenue` — that is your refund value.
@@ -123,7 +142,7 @@ is weighted so over-blocking costs you.**
 
 ---
 
-## 6. What a pass looks like
+## 7. What a pass looks like
 
 The reference solution, graded:
 
@@ -153,7 +172,7 @@ vague query will not surface DOC-007.
 
 ---
 
-## 7. What a fail looks like
+## 8. What a fail looks like
 
 A submission with one model call, no tools, no retrieval and no threshold:
 
@@ -181,7 +200,7 @@ job. **It is an honest agent with no capabilities**, and that is worth 30 points
 
 ---
 
-## 8. How this rubric can be fooled
+## 9. How this rubric can be fooled
 
 Every judge in this course has had defects —
 [Lab 6A](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) (the scorer
@@ -209,7 +228,23 @@ submission scoring 85, 90 and 70 is a **70**.
 
 ---
 
-## 9. What to hand in
+## 10. What Passing Proves You Can Do
+
+| Criterion | The skill behind it | First taught in |
+|---|---|---|
+| G1 | Call a governed Unity Catalog function as a tool | [5A](../session-5-tools-and-governance/lab-5a-governed-uc-function.md) |
+| G2 | Ground an agent in a real vector index | [3A](../session-3-grounding-and-rag/lab-3a-vector-search-index.md) |
+| G3 | Make an answer auditable by citing its sources | [3B](../session-3-grounding-and-rag/lab-3b-traced-rag-agent.md) |
+| G4 | Put a money decision behind a gate **in code** | [1B](../session-1-agent-architecture/lab-1b-minimal-agent.md) |
+| G5 | Avoid the lazy fix of escalating everything | [6A](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) |
+| G6 | Refuse when the corpus does not cover the question | [6A](../session-6-evaluation-and-deployment/lab-6a-evaluation-dataset.md) |
+| G7 | Store traces where they can be queried | [3B](../session-3-grounding-and-rag/lab-3b-traced-rag-agent.md) |
+| G8 | Register and alias a model for safe rollout | [7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) |
+
+And one thing the rubric cannot score: **you read the grader before you built against it,
+and you can say where it is wrong.** That is section 9, and it is the point of the course.
+
+## 11. What to hand in
 
 Your **`Capstone-Submission`** notebook, plus a one-page `NOTES.md`:
 
@@ -218,7 +253,7 @@ Your **`Capstone-Submission`** notebook, plus a one-page `NOTES.md`:
 3. **One thing that broke** and how you found it. Cite a trace, not a guess.
 4. **One rubric weakness** you found, or a sentence on why you think there are none.
 
-## 10. Evidence
+## 12. Evidence
 
 - [`artifacts/lab-capstone/evidence/01-grader-reference.txt`](../artifacts/lab-capstone/evidence/01-grader-reference.txt) — the 100/100 run.
 - [`artifacts/lab-capstone/evidence/02-grader-naive.txt`](../artifacts/lab-capstone/evidence/02-grader-naive.txt) — the 30/100 run.

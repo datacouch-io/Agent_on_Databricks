@@ -28,7 +28,25 @@ This lab builds the same thing **without writing a line of code**, in the Databr
 
 ---
 
-## 2. Prerequisites
+## 2. Files You Will Use
+
+**None to start with.** This lab is entirely in the Databricks console — that is the point
+of it.
+
+| # | What | Where | When |
+|---|---|---|---|
+| 1 | **AI Playground** | left navigation → **AI/ML** → **Playground** | the whole lab |
+| 2 | `agents_labs.retail.get_order_summary` | Unity Catalog | attached as a tool in Step 3 |
+| 3 | **`Agent <model> <timestamp>/driver`** | *created by Step 5* | a **463-line notebook** you did not type |
+| 4 | [`artifacts/lab-1c/evidence/playground-generated-driver.py`](../artifacts/lab-1c/evidence/playground-generated-driver.py) | this repo | that generated notebook, saved, so you can read it before running it |
+
+> 💡 **You finish this lab with a file you did not write.** Step 5 exports your prototype
+> as a notebook that authors a `ResponsesAgent`, evaluates it, registers it and deploys it.
+> Keep it — it is the same shape as the notebooks in Sessions 3 through 6.
+
+---
+
+## 3. Prerequisites
 
 - A Databricks workspace on **Premium or Enterprise**. The Playground itself runs on a trial, but **Get code → Create agent notebook** leads to logging and deployment steps that a trial refuses.
 - **Unity Catalog set up**, with the `agents_labs.retail` catalog and schema from the course setup.
@@ -47,7 +65,7 @@ This lab builds the same thing **without writing a line of code**, in the Databr
 
 ---
 
-## 3. What You're Building
+## 4. What You're Building
 
 ```
   Databricks AI Playground — "Prototype an Agent"
@@ -84,7 +102,7 @@ This lab builds the same thing **without writing a line of code**, in the Databr
 
 ---
 
-## 4. Step-by-Step Instructions
+## 5. Step-by-Step Instructions
 
 ### Step 1 — Open the Playground (3 min)
 
@@ -338,7 +356,7 @@ The Playground session itself costs nothing once you leave it. Two things persis
 
 ---
 
-## 5. What you learned
+## 6. What You Learned
 
 | You saw… | in Step | proof |
 |---|---|---|
@@ -354,7 +372,15 @@ The Playground session itself costs nothing once you leave it. Two things persis
 | The scaffold leaves the judgement to you | 5 gotcha | **7 `TODO`s** |
 | An empty `filters=` is a disclosure waiting to happen | 5 gotcha | [7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) discloses `DOC-006` |
 
-## 6. Evidence
+## 7. What You Hand In
+
+The **seven `TODO`s** from your generated notebook, listed, with one sentence each on what
+decision each one is actually asking you to make.
+
+If you only write one, make it the `VectorSearchRetrieverTool(index_name="", filters="...")`
+block — and say what you would put in `filters=` and why.
+
+## 8. Evidence
 
 - [`artifacts/lab-1c/evidence/playground-generated-driver.py`](../artifacts/lab-1c/evidence/playground-generated-driver.py) — the exported notebook in full, 463 lines, exactly as the Playground generated it.
 
