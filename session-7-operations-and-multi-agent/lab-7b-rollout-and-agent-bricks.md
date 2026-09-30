@@ -2,9 +2,9 @@
 
 **Session 7 · Operations and Multi-Agent Systems**
 
-> ✅ **Steps 1–4 tested end-to-end on Azure Databricks.** Three model versions, real aliases, real predictions loaded from Unity Catalog, real promote and rollback.
+> ✅ **Tested end-to-end on Azure Databricks.** Steps 1–4 are three real model versions, real aliases, real predictions loaded from Unity Catalog, and a real promote and rollback.
 >
-> ✅ **Step 5 is now tested too.** The workspace was upgraded from trial to Premium, and a Knowledge Assistant was built on the Lab 3A index. It answered the grounded probe correctly — and **disclosed an `agent_only` document** on the ungrounded one, which the hand-built agent refuses. Both transcripts are in Step 5. Nothing in that step is presented as tested.
+> ✅ **Step 5 is tested too**, on a workspace upgraded from trial to Premium. A Knowledge Assistant built on the Lab 3A index answered the grounded probe correctly — and **disclosed an `agent_only` document** on the ungrounded one, which the hand-built agent refuses. Both transcripts are in Step 5.
 
 ## What you'll learn
 
@@ -239,13 +239,20 @@ Agent Bricks turns a document source into a Q&A agent from a form. It needs a **
 
 ![The Agents page in the left nav resolving to Page not found on a trial workspace](../artifacts/lab-7b/screenshots/06-agent-bricks-page-not-found.png)
 
+![Every Agent Bricks API route returning 404, and serving refused, on the trial workspace](../artifacts/lab-7b/screenshots/05-agent-bricks-blocked.png)
+
 ```console
   Agent Bricks REST surface on a trial workspace:
     /api/2.0/agent-bricks/knowledge-assistant/list       404
     /api/2.0/knowledge-assistant/list                    404
     /api/2.0/agent-bricks/supervisor/list                404
     /api/2.0/agents/list                                 404
+
+  what Agent Bricks needs underneath — a serving endpoint:
+    NotFound: Model serving is not available for trial workspaces.
 ```
+
+There is also **no REST API even on Premium** — those routes 404 regardless. Agent Bricks is configured in the console, which is why this step is a UI walkthrough rather than a script.
 
 > 💡 **A nav entry is not a feature.** The link renders from static navigation, not from what the workspace has provisioned. Open the page before planning a session around it.
 
