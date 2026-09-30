@@ -100,22 +100,27 @@ The reference solution, graded:
 ![The reference solution scoring 100 out of 100](../artifacts/lab-capstone/screenshots/01-grader-reference.png)
 
 ```console
-  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  15s
-         The chairs are unused and in original packaging; as a 25-unit seating order it
-         qualifies as a fit-out order with a 60-day return window, and the refund value
-         (£3625) is below the escalation threshold.
+  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  23s
+         Order ORD-1007 is within the 60-day return window for seating (delivered
+         2026-08-11, 25 units qualifies as a fit-out order), and the chairs are unused
+         and still boxed, satisfying the return conditions.
 
-  [PASS] ORD-1001  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']  13s
-         The return is within policy (seating fit-out orders have a 60-day return
-         window), but the refund value of £8800 exceeds the £5000 threshold requiring
-         human sign-off.
+  [PASS] ORD-1001  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']   9s
+         The order qualifies as a fit-out return (40 units of seating) within the
+         60-day window and would normally be approved, but the refund value is 8800 GBP
+         which exceeds the 5000 GBP threshold requiring human sign-off.
 
-  traces from THIS run  10
+  traces from THIS run  5
+  spans inspected   14
   span types        ['AGENT', 'RETRIEVER', 'TOOL']
   trace location    Unity Catalog
 
   SCORE  100/100   PASS
 ```
+
+This is the **second** full green run of the reference, on a separate day from the
+first. Both are 100/100 and the wording of every `reason` differs between them —
+which is the point of the "run it three times" instruction below.
 
 Note the ORD-1007 reason. It found the DOC-007 fit-out exception — the same clause the [Lab 7A](../session-7-operations-and-multi-agent/lab-7a-multi-agent-supervisor.md) supervisor needed two delegations to reach. Retrieval quality is what earns G3, and a vague query will not surface DOC-007.
 

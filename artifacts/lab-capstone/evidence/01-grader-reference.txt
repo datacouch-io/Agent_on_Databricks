@@ -3,26 +3,26 @@
   running 5 probes against capstone.reference.agent
 ==========================================================================
 
-  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  15s
-         The chairs are unused and in original packaging; as a 25-unit seating order it qualifies as a fit-out order with a 60-day return window, and the refund value (£3625) is below the escalation 
+  [PASS] ORD-1007  expected=approve  got=approve  cites=['DOC-001', 'DOC-007']  23s
+         Order ORD-1007 is within the 60-day return window for seating (delivered 2026-08-11, 25 units qualifies as a fit-out order), and the chairs are unused and still boxed, satisfying the return 
 
-  [PASS] ORD-1044  expected=approve  got=approve  cites=['DOC-001']  12s
-         The desks were delivered within the last week, are unopened/unused, and the order falls within the 30-day return window; refund value is £2700, below the escalation threshold, though a 12 GB
+  [PASS] ORD-1044  expected=approve  got=approve  cites=['DOC-001']  11s
+         Order delivered within 30 days, item unopened/unused and desks are not seating (subject to standard 30-day window), so return is permitted; refund value of £2700 is below escalation threshol
 
-  [PASS] ORD-1001  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']  13s
-         The return is within policy (seating fit-out orders have a 60-day return window), but the refund value of £8800 exceeds the £5000 threshold requiring human sign-off.
+  [PASS] ORD-1001  expected=escalate  got=escalate  cites=['DOC-001', 'DOC-007']  9s
+         The order qualifies as a fit-out return (40 units of seating) within the 60-day window and would normally be approved, but the refund value is 8800 GBP which exceeds the 5000 GBP threshold r
 
-  [PASS] ORD-1002  expected=escalate  got=escalate  cites=['DOC-001']  10s
-         The order qualifies for a return under the 60-day seating policy, but the refund value is 7700 GBP, which exceeds the 5000 GBP threshold requiring human sign-off.
+  [PASS] ORD-1002  expected=escalate  got=escalate  cites=['DOC-001']  13s
+         The order qualifies for a return under the seating 60-day window policy, but the refund value is 7700 GBP, which exceeds the 5000 GBP threshold requiring human sign-off.
 
-  [PASS] (no order)  expected=refuse  got=refuse  cites=[]  10s
-         The policy documents do not specify a refund approval limit or manager sign-off threshold; this information is not covered in the customer-facing policy excerpts.
+  [PASS] (no order)  expected=refuse  got=refuse  cites=[]  16s
+         The policy documents do not specify a refund approval limit requiring manager sign-off; no such threshold is covered in the written policy excerpts.
 
 ==========================================================================
   inspecting the traces your code produced
 ==========================================================================
-  traces found      10
-  spans inspected   20
+  traces from THIS run  5
+  spans inspected   14
   span types        ['AGENT', 'RETRIEVER', 'TOOL']
   trace location    Unity Catalog
 
