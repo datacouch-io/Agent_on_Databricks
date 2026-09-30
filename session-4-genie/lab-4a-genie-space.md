@@ -1,192 +1,346 @@
-# Lab 4A — Set Up and Query a Genie Space
+# Lab 4A — Build, Curate and Measure a Genie Agent
 
-**Session 4 · Databricks Genie**
+**Session:** 4 — Genie
+**Duration:** ~60 minutes
+**Where you work:** the Databricks console (Genie Agents)
+**Writes code:** none — SQL only if you choose to write ground truth by hand
 
-> ✅ **Tested end-to-end.** A Genie space over two governed Unity Catalog tables, asked a question no one wrote SQL for — *"which region had the biggest drop in revenue?"* — and it answered **Nordics, 22,020 → 4,678** with a windowed `RANK()` query it wrote itself. Then it drilled down to the single customer responsible.
-
-## What you'll learn
-
-- What a **Genie space** is: a governed natural-language interface over tables you choose, not a chatbot with database access.
-- How Genie grounds itself in **Unity Catalog semantics** — and why your `COMMENT` text is doing more work than you think.
-- Why you should read the **SQL Genie generated**, every time, before trusting the number.
-- How a follow-up question narrows a finding from *"a region is down"* to *"this customer, this product line"*.
-- Where Genie's honesty ends: it can tell you *what* changed, never *why*.
-
-## What you'll do
-
-Create a space over the retail tables, ask a business question in English, read the SQL it wrote, then ask a follow-up that drills into the cause.
-
-## Time & cost
-
-- **Time:** ~30 minutes.
-- **Cost:** a serverless SQL warehouse for the duration.
+> **UI verified on 2026-09-30** in a live Azure Databricks workspace. Every score,
+> assessment and failure message below is from a real benchmark run.
 
 ---
 
-## Before you start
+## 1. Lab Overview & Objectives
 
-- **Compute:** a **Pro or Serverless** SQL warehouse. Genie will not run on a classic warehouse.
-- **Permissions:** `CAN USE` on the warehouse, and `SELECT` on the tables. Databricks Assistant must be enabled for the workspace.
-- **Data:** `agents_labs.retail.orders` and `agents_labs.retail.customers`.
+Sessions 2 and 3 grounded an agent in **documents**. This one grounds it in **data**.
 
----
+Genie turns English into governed SQL. The easy part is getting an answer; the hard part is
+knowing whether it is the answer your business meant. This lab does both — and the
+measurement comes first, because *"the demo looked good"* is how Genie projects fail.
 
-## The idea in 60 seconds
+**By the end of this lab you will be able to:**
 
-Genie is not "an LLM with a database connection". It is a **space**: a fixed set of tables, plus the semantics Unity Catalog already holds about them, plus any instructions you add. Questions are answered by generating SQL against exactly those tables and nothing else.
-
-```mermaid
-flowchart TB
-    Q["'which region dropped most?'"] --> G["Genie space"]
-    UC["Unity Catalog<br/>table + column COMMENTs<br/>types · relationships"] --> G
-    T["only the tables you added:<br/>orders · customers"] --> G
-    G --> S["generated SQL"]
-    S --> W["SQL warehouse<br/>runs under the caller's permissions"]
-    W --> R["rows"]
-    R --> A["answer + the SQL, both shown"]
-```
-
-The governance property that matters: **the SQL runs as the person asking.** Genie cannot show a user data they could not already query.
+1. Create a Genie Agent scoped to specific tables.
+2. Write a **benchmark** — a question plus ground-truth SQL that is executed and compared.
+3. Read a failing benchmark and say **exactly** why the generated SQL was wrong.
+4. Fix it in the **Knowledge Store** — SQL Expressions and General Instructions — rather
+   than by rewording the question.
+5. Re-run and show the improvement as a number, not an impression.
 
 ---
 
-## Step 1 — Create the space
+## 2. Files You Will Use
 
-**Goal:** a space scoped to two tables and nothing else.
+**None.** This lab is entirely in the Databricks console.
 
-In the workspace: **Genie Agents → + New**, search for `agents_labs`, select `orders` and `customers`, then **Create**.
+| # | What | Where |
+|---|---|---|
+| 1 | **Genie Agents** | left navigation → **Genie Agents** |
+| 2 | `agents_labs.retail.orders` and `.customers` | the two tables your agent will be scoped to |
 
-![The Genie space, created over the two governed retail tables](../artifacts/lab-4a/screenshots/01-genie-space-ui.png)
-
-Verify it from the CLI:
-
-```bash
-databricks genie get-space <space-id> -o json
-```
-
-```console
-  title      : Retail Customer Orders
-  space_id   : 01f1bc6b0a4f1c6d8269cc9c1ec2af08
-  warehouse  : c8729519c456cb8e
-```
-
-> ⚠️ **Gotcha — space creation is a UI operation in practice.** There is a `databricks genie create-space` command, but it takes a `serialized_space` blob whose schema is only obtainable by exporting an existing space. Probing it returns `Invalid serialized_space: Unknown field 'title'` and similar for every reasonable guess. Create the first space in the UI; script later ones by exporting that one.
-
-> 💡 **Your table comments are the grounding.** When you hover a table in the picker, Genie shows its Unity Catalog `COMMENT`. The `orders` table here says *"Retail orders. The structured half of the course: Genie queries this…"*, and every column carries a comment too. That text is what Genie reads to decide which column means "revenue" and which means "when it was ordered". **Undocumented tables make a poor Genie space**, and the fix is `COMMENT ON`, not prompt engineering.
+> ⚠️ **There is no public API for Genie benchmarks.** `GET /api/2.0/genie/spaces/{id}/benchmarks`
+> returns `ENDPOINT_NOT_FOUND`, as do the obvious variants. Spaces themselves *are*
+> scriptable (`GET /api/2.0/genie/spaces/{id}` works), but **benchmarks and the Knowledge
+> Store are console-only** at the time of writing.
+>
+> That matters for planning: **you cannot put a Genie benchmark in CI yet.** It is a
+> curation tool a human runs, not a regression gate.
 
 ---
 
-## Step 2 — Ask a question nobody wrote SQL for
+## 3. Prerequisites
 
-**Goal:** get a correct, governed answer from English.
-
-```bash
-python code/ask_genie.py
-```
-
-The question: *"Which region had the biggest drop in revenue from August to September 2026?"*
-
-![Genie's answer with the SQL it generated and the row it returned](../artifacts/lab-4a/screenshots/02-genie-nordics-answer.png)
-
-**What you should see** — Genie writes a windowed query, unprompted:
-
-```sql
-WITH region_revenue AS (
-  SELECT c.region,
-         SUM(CASE WHEN ... '2026-08' ... END) AS august_revenue,
-         SUM(CASE WHEN ... '2026-09' ... END) AS september_revenue
-  FROM agents_labs.retail.orders o
-  INNER JOIN agents_labs.retail.customers c ON o.customer_id = c.customer_id
-  WHERE o.order_date >= DATE'2026-08-01' AND o.order_date < DATE'2026-10-01'
-  GROUP BY c.region
-), ranked AS (
-  SELECT region, august_revenue, september_revenue,
-         (august_revenue - september_revenue) AS revenue_drop,
-         RANK() OVER (ORDER BY (august_revenue - september_revenue) DESC) AS rnk
-  FROM region_revenue
-)
-SELECT region, august_revenue, september_revenue, revenue_drop FROM ranked WHERE rnk <= 1
-```
-
-```console
-  rows:
-    {"region": "Nordics", "august_revenue": "22020.00",
-     "september_revenue": "4678.00", "revenue_drop": "17342.00"}
-```
-
-> The **Nordics** region had the biggest revenue drop: August **22020.00**, September **4678.00**, a decline of **17342.00**.
-
-**What this means.** The join, the conditional aggregation, the window function and the ranking were all inferred from the question and the table comments. Nobody wrote that SQL.
-
-> 🚨 **Gotcha — always read the generated SQL.** It is returned alongside the answer for a reason. A plausible number computed from the wrong join, the wrong date boundary, or a silently dropped `NULL` is far more dangerous than an error. Here the `WHERE` uses a half-open range `>= '2026-08-01' AND < '2026-10-01'`, which is correct; a `BETWEEN` on a timestamp column would have been subtly wrong. **The SQL is the auditable artifact, not the prose.**
+- `SELECT` on `agents_labs.retail.orders` and `agents_labs.retail.customers`.
+- A running **SQL warehouse** — Genie executes real queries.
+- Permission to create a Genie Agent.
 
 ---
 
-## Step 3 — Drill down to the cause
+## 4. What You're Building
 
-**Goal:** turn *"a region is down"* into something actionable.
-
-```bash
-python code/ask_genie.py "For the Nordics only, break September 2026 revenue down by customer and product line, and compare it to August."
 ```
-
-![The drill-down: one customer and one product line account for the entire drop](../artifacts/lab-4a/screenshots/03-genie-drilldown.png)
-
-```console
-  {"customer_name": "Nordic Office Group", "product_line": "Seating",
-   "august_2026_revenue": "16500.00", "september_2026_revenue": "0.00",
-   "revenue_change_vs_august": "-16500.00"}
-  {"customer_name": "Fjord Interiors",    "product_line": "Lighting", ... "-480.00"}
-  {"customer_name": "Helsinki Works",     "product_line": "Desks",    ... "-540.00"}
-```
-
-**What this means.** Of a 17,342 drop, **16,500 is one customer in one product line**. The other Nordics customers are down by a few hundred — noise. This is the shape of a real analysis: the aggregate was a symptom, the breakdown is the finding.
-
-> 💡 **This is [Lab 1A's scenario D](../session-1-agent-architecture/lab-1a-workflow-vs-agent.md), running for real.** That design exercise argued *"why did revenue drop in the Nordics?"* is genuinely agentic because each query's result determines the next. You have just done exactly that: the regional query told you *where* to look, and only then could you ask the breakdown question. Neither query was knowable in advance.
-
----
-
-## Step 4 — Where Genie stops
-
-**Goal:** know the boundary before you rely on it.
-
-Genie answers questions about **what the data says**. It cannot tell you:
-
-- **Why** Nordic Office Group stopped ordering. Intent is not in the orders table.
-- Anything about tables **not in the space** — that is the governance boundary, and it is a feature.
-- Anything from **documents**. Policy lives in prose, not columns; that is what [Lab 3A's](../session-3-grounding-and-rag/lab-3a-vector-search-index.md) index is for.
-
-> ⚠️ **Gotcha — a confident answer over an incomplete space is still incomplete.** If you add `orders` but forget `customers`, Genie will happily answer regional questions by… not being able to, or by finding some other column that looks regional. It does not know what it is missing. **Scope the space deliberately, and test it with questions whose answers you already know** — the same discipline as Lab 3A's retrieval checks.
-
----
-
-## Step 5 — Clean up
-
-The space costs nothing when idle. Stop the warehouse if you started it for this lab:
-
-```bash
-databricks warehouses stop $LAB_WAREHOUSE_ID
+  Genie Agent "Retail Customer Orders"
+  ├── Sources         orders, customers
+  ├── Knowledge Store
+  │     ├── About         description + common questions
+  │     ├── Instructions  general rules, in prose
+  │     └── Examples      curated question → SQL pairs
+  └── Benchmark
+        question + ground-truth SQL
+              │
+              ▼
+        run  →  Genie answers  →  results compared to ground truth
+              │
+              ├── Bad  → failure analysis → proposed knowledge snippet
+              │                                      │
+              │                              accept ─┘
+              └── Good → you have a number you can defend
 ```
 
 ---
 
-## What you learned
+## 5. Step-by-Step Instructions
+
+### Step 1 — Create the agent (8 min)
+
+1. Left navigation → **Genie Agents**.
+2. **+ New**, search for `agents_labs`, select **`orders`** and **`customers`**, **Create**.
+
+![The Genie agent over the two governed retail tables](../artifacts/lab-4a/screenshots/01-genie-space-ui.png)
+
+**Expected result:** a chat page titled with your agent's name, and four suggested
+questions Genie generated by reading your schema.
+
+> ⚠️ **Space creation is a UI operation in practice.** `databricks genie create-space`
+> exists but takes a `serialized_space` blob whose schema you can only obtain by exporting
+> an existing space — probing it returns `Invalid serialized_space: Unknown field 'title'`.
+> Create the first one here; script later ones by exporting this one.
+
+> 💡 **Your table comments are the starting grounding.** Hover a table in the picker and
+> Genie shows its Unity Catalog `COMMENT`. **Undocumented tables make a poor Genie agent**,
+> and the first fix is `COMMENT ON`, not prompt engineering.
+
+---
+
+### Step 2 — Ask a question nobody wrote SQL for (7 min)
+
+In the chat, ask:
+
+> *"Which region had the biggest drop in revenue from August to September 2026?"*
+
+![Genie's answer, with the SQL it generated](../artifacts/lab-4a/screenshots/02-genie-nordics-answer.png)
+
+Genie writes a windowed query unprompted — conditional aggregation, a join, `RANK()` — and
+answers **Nordics**, August `22020.00` → September `4678.00`.
+
+> 🚨 **Always read the generated SQL.** It is returned alongside the answer for a reason. A
+> plausible number computed from the wrong join, the wrong date boundary or a silently
+> dropped `NULL` is far more dangerous than an error. Here the `WHERE` uses a half-open
+> range `>= '2026-08-01' AND < '2026-10-01'`, which is correct; a `BETWEEN` on a timestamp
+> column would have been subtly wrong.
+>
+> **The SQL is the auditable artifact, not the prose.**
+
+That answer was good. Step 3 is about the ones that are not — and about not finding out
+from a customer.
+
+---
+
+### Step 3 — Write a benchmark (12 min)
+
+**Why:** A benchmark is a question plus the SQL you know is right. Genie runs both and
+compares the **results**, so this is a real test, not a vibe check.
+
+1. Top of the agent page → **Benchmark** tab.
+
+![The empty Benchmark tab](../artifacts/lab-4a/screenshots/12-benchmarks-empty.png)
+
+2. **+ Add benchmark**.
+3. **Question:**
+
+   ```
+   Who are our best customers?
+   ```
+
+4. **Ground truth SQL answer:**
+
+   ```sql
+   SELECT c.name, SUM(o.revenue) AS lifetime_revenue
+   FROM agents_labs.retail.orders o
+   JOIN agents_labs.retail.customers c USING (customer_id)
+   GROUP BY c.name
+   ORDER BY lifetime_revenue DESC
+   LIMIT 5
+   ```
+
+![The Add benchmark dialog, filled in](../artifacts/lab-4a/screenshots/13-add-benchmark-dialog.png)
+
+5. **Add benchmark**.
+
+> 💡 **Choose questions that are ambiguous *to a stranger* but obvious to the business.**
+> *"Who are our best customers?"* is perfect: by lifetime revenue the answer is Nordic
+> Office Group; by order count it is a four-way tie. **You know which one your CFO means.
+> Genie does not.** That gap is what the Knowledge Store exists to close.
+
+> ⚠️ **Ground truth is optional, and skipping it costs you the automation.** Without it the
+> question is *"marked for manual review"* — still useful for spotting drift, but somebody
+> has to read every answer.
+
+---
+
+### Step 4 — Run it, and read the failure (12 min)
+
+Click **▶ Run all benchmarks**. Expect 1–2 minutes per question; Genie generates an answer
+and executes both queries.
+
+![The baseline: 0% accurate, with Genie's own failure analysis](../artifacts/lab-4a/screenshots/14-benchmark-baseline-failed.png)
+
+**Expected result — and this is the point of the lab:**
+
+```
+  0% accurate (0/1)
+
+  Assessment  : Bad
+  Score reason: Extra Rows | Filter Issue
+
+  Failure analysis
+  The Genie query incorrectly filters for only 'delivered' orders and groups by
+  both customer name and tier, which can split revenue for customers who changed
+  tiers, leading to different results than the ground truth. It also returns 10
+  results instead of the requested top 5, so the output does not match the
+  intended query semantics.
+```
+
+**Three distinct faults, named precisely:**
+
+| Fault | Why Genie did it |
+|---|---|
+| Filtered to `status = 'delivered'` | a reasonable guess nobody told it not to make |
+| Grouped by `name` **and** `tier` | `tier` is on the customer; grouping by it splits a customer who changed tier |
+| Returned 10 rows, not 5 | *"best customers"* does not say how many |
+
+> 🚨 **Not one of these is a hallucination.** Every choice is defensible in isolation.
+> Genie did not invent data — it made three reasonable assumptions, and your business makes
+> three different ones. **This is what "wrong" usually looks like in a text-to-SQL system**,
+> and no amount of reading the prose answer would have revealed it. The prose said
+> *"here are your best customers"* and listed real names.
+
+---
+
+### Step 5 — Let Genie propose the fix (8 min)
+
+Next to the **Bad** assessment, click **✨ Review proposed fixes**.
+
+![Genie proposing a SQL Expression for the Knowledge Store](../artifacts/lab-4a/screenshots/15-knowledge-snippet-proposed.png)
+
+```
+  Review knowledge snippets
+  Genie extracted this 1 knowledge snippet. Check if it looks correct; once you
+  accept it, Genie will use this knowledge to answer future questions.
+
+  New Suggestions (1)   SQL Expressions
+    MEASURE  lifetime revenue   means   SUM(`orders`.`revenue`)
+```
+
+Click **Accept 1 snippet**.
+
+> 💡 **This is knowledge mining, and it is the loop worth internalising.** A failing
+> benchmark produced a reusable definition. You did not write it; you *reviewed* it. The
+> definition now applies to every future question that mentions lifetime revenue, not just
+> this one.
+>
+> **Review it properly, though.** Accepting a snippet writes a business definition into
+> your agent. A wrong one is worse than none, because now it is confidently wrong
+> everywhere.
+
+---
+
+### Step 6 — Write the instructions the snippet did not cover (8 min)
+
+The snippet fixed the *measure*. Two faults remain: the `delivered` filter and the `tier`
+grouping. Those are rules, not measures.
+
+**Configure → Instructions**, and enter:
+
+```
+Revenue is already stored in orders.revenue. Never recompute it from units and price.
+
+"Best customers" and "top customers" mean highest lifetime revenue: the sum of
+orders.revenue per customer across all of that customer's orders.
+
+Include orders of every status unless the user explicitly asks for one. Do not
+filter to 'delivered' by default.
+
+Tier and region are attributes of the customer, not of the order. Never group a
+per-customer total by tier or region unless the user asks for that breakdown.
+
+When the user asks for a top N, return exactly N rows.
+```
+
+![The General Instructions saved](../artifacts/lab-4a/screenshots/16-instructions-filled.png)
+
+Click **Save**.
+
+> 💡 **Every line there was written against a named failure.** None of it was guessed. That
+> is the difference between curation and prompt-fiddling: you are not making the agent
+> "better", you are closing three specific gaps the benchmark identified.
+
+> ⚠️ **Instructions are prose, and prose drifts.** There is no test that these are still
+> needed, or still correct, six months from now. The benchmark is the only thing that will
+> tell you — which is why you wrote it first.
+
+---
+
+### Step 7 — Re-run, and get a number (5 min)
+
+**Benchmark → Run all benchmarks.**
+
+![100% accurate after curation](../artifacts/lab-4a/screenshots/17-benchmark-passes.png)
+
+```
+  100% accurate (1/1)
+
+  Assessment: Good
+
+  ## Your Best Customers by Lifetime Revenue
+  Your top customer is **Nordic Office Group** with £16,500 in total revenue,
+  followed by Berlin Raumdesign at £10,800.
+```
+
+**The full arc, all of it measured:**
+
+| | Before | After |
+|---|---|---|
+| Accuracy | **0% (0/1)** | **100% (1/1)** |
+| Assessment | Bad | Good |
+| Score reason | Extra Rows, Filter Issue | — |
+| What changed | *(nothing in the question)* | 1 SQL Expression + 5 lines of instructions |
+
+**The question was never reworded.** That is the discipline: when Genie gets something
+wrong, the fix belongs in the Knowledge Store, where it applies to every future phrasing —
+not in the question, which helps exactly one person once.
+
+---
+
+### Step 8 — Extend it (optional, 10 min)
+
+Add three more benchmarks and re-run. Suggested, in increasing difficulty:
+
+| Question | Why it is hard |
+|---|---|
+| *"What is total revenue by region?"* | `region` lives on `customers`, so it needs the join |
+| *"What is our average order value?"* | is that `avg(revenue)`, or `sum(revenue)/count(DISTINCT order_id)`? |
+| *"Which customers have gone quiet?"* | **undefined.** Watch what Genie invents, then decide whether you want an instruction or a refusal |
+
+> 💡 **The third one is the most valuable.** A benchmark whose correct answer is *"the data
+> does not define that"* is worth writing, because it catches an agent that will confidently
+> answer anything.
+
+---
+
+## 6. What You Learned
 
 | You saw… | in Step | proof |
 |---|---|---|
-| A Genie space is scoped to tables you choose | 1 | two tables, nothing else reachable |
-| Unity Catalog comments are the grounding | 1 | column comments drive column selection |
-| Space creation is realistically a UI task | 1 gotcha | `serialized_space` schema is not guessable |
-| Genie writes non-trivial SQL from English | 2 | CTEs, conditional aggregation, `RANK()` |
-| The generated SQL is the auditable artifact | 2 gotcha | half-open date range, visible and checkable |
-| A follow-up turns a symptom into a finding | 3 | 16,500 of a 17,342 drop is one customer |
-| Genie answers *what*, never *why* | 4 | intent is not a column |
+| Genie writes non-trivial SQL unprompted | 2 | windowed query, correct half-open date range |
+| The generated SQL is the auditable artifact | 2 | prose hides join and boundary errors |
+| A benchmark executes both queries and compares results | 3 | not a vibe check |
+| Ambiguous-to-a-stranger questions expose real gaps | 3 | "best" = revenue or order count? |
+| The baseline was **0% accurate** | 4 | Assessment Bad |
+| The failure was three reasonable assumptions | 4 | filter, grouping, row count |
+| None of it was a hallucination | 4 | every name returned was real |
+| A failing benchmark proposes its own fix | 5 | `lifetime revenue` = `SUM(orders.revenue)` |
+| Instructions were written against named failures | 6 | five lines, three faults |
+| Curation is measured, not asserted | 7 | **0% → 100%** |
+| The question was never reworded | 7 | only the Knowledge Store changed |
+| Benchmarks are console-only — **no CI** | 2 gotcha | API returns `ENDPOINT_NOT_FOUND` |
 
-## Evidence
+## 7. What You Hand In
 
-[`artifacts/lab-4a/evidence/lab-4a-genie-answers.txt`](../artifacts/lab-4a/evidence/lab-4a-genie-answers.txt) — both questions, with generated SQL and rows.
-Source: [`code/ask_genie.py`](code/ask_genie.py).
+A screenshot of your benchmark run showing the accuracy figure, plus the Knowledge Store
+entries you added. If your number did not move, say what you changed and what the failure
+analysis said — **a documented failed attempt is worth more than an undocumented pass.**
 
 ---
 
-**Next:** [Lab 4B — Call Genie From Inside an Agent](lab-4b-genie-in-an-agent.md)
+**Next:** [Lab 4B — Genie Inside an Agent](lab-4b-genie-in-an-agent.md)
