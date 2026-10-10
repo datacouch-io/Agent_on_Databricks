@@ -1,0 +1,37 @@
+<section id="s7-t3-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 7B &middot; notebook &middot; canary and rollback</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: read both columns, then decide</h2>
+<div style="display:flex;gap:28px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">The result as reported</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">probes: 3<br>
+<br>
+challenger refusals&nbsp;&nbsp; 1 / 3<br>
+<br>
+<span style="color:#8B0000">"the challenger is</span><br>
+<span style="color:#8B0000">&nbsp;refusing questions"</span><br>
+<br>
+<span style="color:#8B0000">-&gt; revert?</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">The result with its control</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">probes: 3<br>
+<br>
+challenger refusals&nbsp;&nbsp; 1 / 3<br>
+champion refusals&nbsp;&nbsp;&nbsp;&nbsp; 2 / 3<br>
+<br>
+<span style="color:#1F6F43">the challenger refused</span><br>
+<span style="color:#1F6F43">less, not more</span><br>
+<br>
+<span style="color:#8B0000">and n=3 supports</span><br>
+<span style="color:#8B0000">neither conclusion</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">The honest conclusion</p><p style="font-size:27px;color:#4A5568;line-height:1.45"><b>No decision.</b> Keep the split running, widen the probe set, and revisit. &ldquo;Not enough data&rdquo; is a legitimate outcome and the hardest one to report.</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Then rehearse the rollback anyway</p><p style="font-size:27px;color:#14181F;line-height:1.45">Move <span style="font-family:'JetBrains Mono', Courier New, monospace">@champion</span> back to <span style="font-family:'JetBrains Mono', Courier New, monospace">@previous</span> and confirm the endpoint follows. You want that muscle memory from a lab, not from an incident.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EDF0F3;padding:30px 34px;border-radius:12px"><p style="font-size:28px;font-weight:700;color:#8B0000">What to take away</p><p style="font-size:27px;color:#4A5568;line-height:1.45">The mechanics are easy &mdash; a traffic config and an alias. The judgement is the skill, and it is mostly discipline about controls and sample sizes.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">168</p>
+<aside>End the taught content here, with a result that refuses to resolve neatly.
+
+Show the left column and ask the room what they would do. Most will say revert, which is the defensible instinct and is what our first write-up did. Then add the control column. The challenger refused less often than the champion over the same window, so the regression was not a regression.
+
+And then, having rescued the challenger, do not promote it either. Three probes cannot distinguish one refusal from two. The correct outcome is the middle panel: no decision, widen the probe set, keep observing. That is the professionally honest answer and it is the hardest one to put in a status report, because it sounds like you did not finish.
+
+Finish the lab by rehearsing the rollback regardless. Move the alias back, confirm the endpoint follows, see how fast it is. Doing it once in a lab is how it becomes available to you at 2am.
+
+The closing note is the one to end the session on: the mechanics here are genuinely easy, and everything difficult about operating agents is judgement — controls, sample sizes, and reading the instrument before believing it.
+
+Likely question: "So how do we ever ship anything?" With a stated metric, a real control, enough traffic, and a cheap way back. That is four things, and this course has built all of them.
+
+Timing: 15 minutes of lab, 4 minutes on this slide.</aside>
+</section>

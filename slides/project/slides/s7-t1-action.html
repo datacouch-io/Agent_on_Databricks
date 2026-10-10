@@ -1,0 +1,37 @@
+<section id="s7-t1-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 7A &middot; notebook &middot; supervisor and two workers</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: correct routing, incomplete handoff</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Run 1 &mdash; routing works</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">user: &ldquo;where is ORD-1042?&rdquo;<br>
+<br>
+supervisor: route -&gt; orders_agent<br>
+orders_agent: get_order(...)<br>
+&nbsp;&nbsp;-&gt; delivered, 2026-09-28<br>
+<br>
+<span style="color:#1F6F43">answer: correct</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Run 2 &mdash; the instructive failure</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">user: &ldquo;can I return ORD-1042?&rdquo;<br>
+<br>
+supervisor: route -&gt; policy_agent<br>
+handoff: {'question': 'can I<br>
+&nbsp;&nbsp;return this order?'}<br>
+<span style="color:#8B0000">&nbsp;&nbsp;(no order date passed)</span><br>
+policy_agent: search_policy(...)<br>
+&nbsp;&nbsp;-&gt; DOC-002, 30-day window<br>
+<br>
+answer: &ldquo;Returns are accepted<br>
+within 30 days of delivery.&rdquo;<br>
+<br>
+<span style="color:#8B0000">Accurate. Useless. No error.</span></p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">What the trace shows</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Two spans, both <span style="font-family:'JetBrains Mono', Courier New, monospace">OK</span>. The routing span is correct. The handoff span is where the order date <i>should</i> be and is not. You cannot see this in the final answer alone.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Fix it two ways</p><p style="font-size:27px;color:#14181F;line-height:1.45">Either the supervisor fetches the order first and includes the date in the handoff, or the policy worker is given the order tool so it can ask. <b>Compare the cost of each.</b></p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">158</p>
+<aside>Run both and let run two stand without resolving it immediately. The answer is accurate, well-written and does not help the customer, and that combination is the thing to sit with.
+
+Then open the trace. Both spans are OK. Nothing failed. The routing decision was right — a returns question is a policy question. The defect is in the handoff payload, which contains the question and not the order date, and the worker had no way to know a fact was missing.
+
+Connect it back to Session 3's closing note: every span OK, every tool successful, and the answer wrong. Span status measures plumbing.
+
+Then work the two fixes as a design discussion, because there is no single right answer. The supervisor fetching the order first is cheaper — one extra tool call — and makes the supervisor know about orders, which erodes the separation you split for. Giving the policy worker the order tool keeps the supervisor thin and widens the worker's tool set and its permissions. Ask the room which they would choose and why; both answers are defensible and the reasoning is the lesson.
+
+Likely question: "Would a single agent have got this right?" In this case yes, because all the context sits in one messages list. That is the honest cost of splitting, and it is why the previous slide said default to one.
+
+Timing: 25 minutes of lab, 4 minutes on this slide.</aside>
+</section>

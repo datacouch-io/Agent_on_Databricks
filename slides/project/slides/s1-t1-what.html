@@ -1,0 +1,47 @@
+<section id="s1-t1-what" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">What is an AI agent?</h2>
+<p style="font-size:34px;color:#14181F;line-height:1.4;width:1600px">An <b>AI agent</b> is a program in which a language model decides <i>what to do next</i>, in a loop, until a stopping condition is met.</p>
+<div style="display:flex;gap:24px">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">LLM call</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.4"><b>LLM</b> = Large Language Model. One request, one answer. No memory, no actions.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">Workflow</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.4">A sequence of steps <i>you</i> wrote. The model may appear in a step; it never chooses the next one.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">RAG</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.4"><b>RAG</b> = Retrieval-Augmented Generation. One specific workflow: retrieve, then generate.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#14181F;padding:28px;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#FF9E64">Agent</p>
+<p style="font-size:25px;color:#E3E6EA;line-height:1.4">The model picks the step. Order, count and whether to stop are all decided at runtime.</p>
+</div>
+</div>
+<div style="display:flex;gap:40px;align-items:center;background:#EDF0F3;padding:34px 40px;border-radius:14px">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px">
+<p style="font-size:28px;font-weight:700;color:#8B0000">The analogy</p>
+<p style="font-size:30px;color:#14181F;line-height:1.45">A workflow is a <b>recipe</b>. An agent is a <b>cook who tastes and adjusts</b>. Both can produce dinner. Only one of them can be audited in advance.</p>
+</div>
+<div style="width:520px;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:28px;border:1px solid #D9DCE1;border-radius:12px">
+<p style="font-size:25px;font-weight:700">Five parts of any agent</p>
+<p style="font-size:26px;color:#4A5568;line-height:1.5">instructions &middot; a model &middot; tools<br>state &middot; a stopping condition</p>
+</div>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">7</p>
+<aside>Four words get used interchangeably in this field and should not be. Spend two minutes separating them, because every architecture mistake in the rest of the course starts here.
+
+Read the definition slowly and stress the three words that carry it: decides what next. Not "uses a language model" — a workflow can use a language model in every step and still be a workflow. Not "is conversational" — a chatbot with a fixed retrieve-then-answer path is RAG.
+
+Analogy to use: a recipe versus a cook. A recipe is a workflow; you can read it start to finish before you turn on the hob, and you know exactly what it will do. A cook tastes the sauce and decides to add salt. More capable, and you cannot write down in advance what they will do.
+
+Define the acronyms as you go — LLM and RAG are both on the slide for a reason. Assume someone in the room has not written one of these before.
+
+Likely question: "Isn't an agent just RAG with more steps?" No. RAG has a fixed shape: one retrieval, one generation. An agent might retrieve three times, call a database, decide the question is unanswerable and stop. The shape is a runtime outcome, not a design.
+
+Timing: 3 minutes.</aside>
+</section>

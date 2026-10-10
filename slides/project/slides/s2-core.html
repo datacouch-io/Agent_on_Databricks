@@ -1,0 +1,51 @@
+<section id="s2-core" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">One agent, two sources, one interface</h2>
+<div style="display:flex;gap:40px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#14181F;padding:34px;border-radius:14px">
+<p style="font-size:25px;font-weight:700;color:#8BD5FF;letter-spacing:2px;text-transform:uppercase">core.py</p>
+<p style="font-size:28px;color:#E3E6EA;line-height:1.45">The loop, the tool schemas, the gate, the retries.</p>
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#A7E8BD;line-height:1.5">import json, os<br>from openai import OpenAI</p>
+<p style="font-size:26px;color:#B8C1CC;line-height:1.4;padding:8px 0 0 0">No <span style="font-family:'JetBrains Mono', Courier New, monospace">databricks</span> import. Anywhere.</p>
+</div>
+<div style="display:flex;flex-direction:column;justify-content:center;gap:10px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:26px;font-weight:700;color:#8B0000;text-align:center">search_docs(<br>&nbsp;query, k<br>)</p>
+<x-shape kind="arrow-right" style="background:#8B0000;width:120px;height:40px"></x-shape>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:2px solid #8B0000;border-radius:12px">
+<p style="font-size:27px;font-weight:700">Retriever A &mdash; keyword</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.4">A dictionary in memory. Zero infrastructure.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700">Retriever B &mdash; AI Search</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.4">A governed Delta Sync index in Unity Catalog.</p>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:36px">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:30px 34px;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">The structured tool</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.45">Orders live in a table. The agent queries them by id &mdash; precise, cheap, no embedding involved.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:30px 34px;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">The unstructured tool</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.45">Policy lives in prose. The agent retrieves passages &mdash; approximate, ranked, cited.</p>
+</div>
+</div>
+<p style="font-size:30px;color:#14181F;line-height:1.45">Two retrieval modes the model picks between, behind <b>one schema it never sees the implementation of</b>.</p>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">34</p>
+<aside>Lab 2A is where the course stops being a tutorial and starts being an architecture.
+
+Point at the two retrieval modes first. A refund question needs both: what did this customer actually buy, and what does policy permit? One is a lookup by key, the other is a similarity search over prose. Agents that only do RAG answer the second question and guess at the first.
+
+Then the discipline. core.py may import json, os and the OpenAI client — nothing else. Everything vendor-specific lives in the retriever passed into it. The lab enforces this with an AST check over core.py's imports.
+
+A note on that check: an earlier version of it was a grep for the string "databricks", which reported a leak. The hit was inside core.py's own docstring, describing what it must not import. The lab keeps both checks and labels the grep result a known false positive — a small, early example of the theme that runs through this course: read what the instrument actually measured.
+
+Expected question: "Why not use a framework for this?" You can, and Session 7 does. The point of doing it by hand once is that you then know what the framework is deciding on your behalf.
+
+Timing: 5 minutes.</aside>
+</section>

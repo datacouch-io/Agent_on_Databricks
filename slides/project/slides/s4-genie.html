@@ -1,0 +1,50 @@
+<section id="s4-genie" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">What is the Genie Knowledge Store?</h2>
+<div style="display:flex;gap:36px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:32px;font-weight:600;color:#8B0000">The Knowledge Store &mdash; four tabs</h3>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700">About</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.35">What this data is and who it is for.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700">Sources</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.35">The tables it may touch. Nothing else is reachable.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:24px 28px;border:2px solid #8B0000;border-radius:12px">
+<p style="font-size:27px;font-weight:700">Instructions</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.35">Business rules in prose. &ldquo;Revenue excludes cancelled orders.&rdquo;</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;font-weight:700">Examples</p>
+<p style="font-size:25px;color:#4A5568;line-height:1.35">Question &rarr; the SQL you would have written.</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:12px;background:#EDF0F3;padding:30px 34px;border-radius:12px">
+<p style="font-size:28px;font-weight:700">An empty space is a worse analyst than your junior</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.45">Point it at <span style="font-family:'JetBrains Mono', Courier New, monospace">orders</span> with no curation and ask for revenue. It sums every row, including the cancelled ones, and is confidently wrong.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:12px;background:#14181F;padding:30px 34px;border-radius:12px">
+<p style="font-size:28px;font-weight:700;color:#FF9E64">Knowledge mining</p>
+<p style="font-size:27px;color:#E3E6EA;line-height:1.45">Genie reads your query history and proposes instructions and examples from SQL your team already runs. Review them &mdash; it is a draft, not an authority.</p>
+</div>
+<p style="font-size:29px;color:#4A5568;line-height:1.5">The work is not prompt engineering. It is <b style="color:#14181F">writing down the definitions your organisation argues about</b> in a place a machine can read.</p>
+</div>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">83</p>
+<aside>Lab 4A is a console walkthrough — every click is screenshotted in the guide, including building the Retail Customer Orders space from an empty workspace.
+
+Lead with the failure, not the feature. Create the space, add the orders table, ask "what was our revenue last month", and read the SQL it generates. It sums total_amount across all rows. The cancelled orders are in there. No warning, no hedge — a clean number that is wrong.
+
+Then add one instruction: revenue excludes orders with status cancelled. Ask again. The WHERE clause appears. That is the whole lesson about Genie and most of the lesson about agents on enterprise data: the model does not know your business rules, and nothing about its fluency will tell you when it is missing one.
+
+Examples are more powerful than instructions for anything involving a join or a date convention. If your fiscal year starts in April, no amount of prose beats one worked example.
+
+Expected question: "Who should own the Knowledge Store?" The people who own the metric definitions — not the ML team. This is a data governance artefact that happens to be consumed by a model.
+
+Timing: 5 minutes.</aside>
+</section>

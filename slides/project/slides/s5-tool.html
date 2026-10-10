@@ -1,0 +1,57 @@
+<section id="s5-tool" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">A Unity Catalog function <i>is</i> the tool definition</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;background:#1E242E;padding:32px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#FF9E64">CREATE FUNCTION</span> cat.sch.get_order(<br>
+&nbsp;&nbsp;order_id <span style="color:#FF9E64">STRING</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">COMMENT</span> <span style="color:#A7E8BD">'Order id, e.g. ORD-1042'</span><br>
+)<br>
+<span style="color:#FF9E64">RETURNS TABLE</span> (...)<br>
+<span style="color:#FF9E64">COMMENT</span> <span style="color:#A7E8BD">'Look up one order by id.'</span><br>
+<span style="color:#FF9E64">RETURN SELECT</span> ... ;<br>
+<br>
+<span style="color:#FF9E64">GRANT EXECUTE ON FUNCTION</span> ...<br>
+&nbsp;&nbsp;<span style="color:#FF9E64">TO</span> <span style="color:#A7E8BD">`&lt;application-id&gt;`</span>;</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:230px;font-size:26px;font-weight:700;color:#8B0000">Signature</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">becomes the JSON schema the model sees</p>
+</div>
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:230px;font-size:26px;font-weight:700;color:#8B0000">COMMENT</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">becomes the tool description &mdash; this is prompt engineering in DDL</p>
+</div>
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:2px solid #8B0000;border-radius:12px">
+<p style="width:230px;font-size:26px;font-weight:700;color:#8B0000">GRANT</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">becomes the access control &mdash; enforced, not suggested</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#14181F;padding:28px 32px;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#FF9E64">Managed MCP server</p>
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:23px;color:#B8C1CC;line-height:1.4">/api/2.0/mcp/functions/{catalog}/{schema}</p>
+<p style="font-size:26px;color:#E3E6EA;line-height:1.4">Your schema is already an MCP server. <span style="font-family:'JetBrains Mono', Courier New, monospace">tools/list</span> and <span style="font-family:'JetBrains Mono', Courier New, monospace">tools/call</span>, no server to deploy.</p>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:20px;align-items:center;background:#F6E9E9;padding:26px 32px;border-radius:12px">
+<x-icon name="Warning" style="color:#8B0000;width:46px;height:46px"></x-icon>
+<p style="font-size:28px;color:#14181F;line-height:1.4;width:1540px"><b>Grant to the application ID, not the display name.</b> <span style="font-family:'JetBrains Mono', Courier New, monospace">PRINCIPAL_DOES_NOT_EXIST</span> cost us twenty minutes &mdash; two service principals shared a display name.</p>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">105</p>
+<aside>Lab 5A. The slide to linger on is the middle column, because each row is a thing you used to do in Python and now do in DDL.
+
+Take the COMMENT row seriously. That string is what the model reads when deciding whether this tool is the right one. A vague comment produces a tool the model never picks, or picks for the wrong question. You are writing prompt text inside a CREATE FUNCTION statement, and it belongs in code review like any other prompt.
+
+Then MCP. There is nothing to build. Point an MCP client at /api/2.0/mcp/functions/your_catalog/your_schema and the functions in that schema are tools. Any MCP-speaking client — including ones written by people who have never heard of your project.
+
+Which is exactly why the GRANT row has the red border. The moment your tools are discoverable by clients you did not write, a permission check in your agent code is not a control.
+
+The gotcha is real and worth repeating: Unity Catalog wants the application ID. We had two service principals with the same display name, and the friendly name resolved to nothing.
+
+Expected question: "What about tools that are not SQL?" Register them as Python functions in UC, or front them with a serving endpoint. The governance story is the same; only the body changes.
+
+Timing: 6 minutes.</aside>
+</section>

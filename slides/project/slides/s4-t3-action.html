@@ -1,0 +1,34 @@
+<section id="s4-t3-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 4A &middot; console &middot; Benchmarks tab</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: a suite that moves when you change a rule</h2>
+<div style="display:flex;gap:36px"><div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">1</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Benchmarks &rarr; <b>Add</b>. Paste the question a user would ask.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">2</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Paste your ground-truth SQL. This is the reviewed, correct query.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">3</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Repeat for each distinct question shape &mdash; a total, a top-N, a join, a date range.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">4</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35"><b>Run</b>. Genie answers each question and compares rows against yours.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">5</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Read the failures, and the SQL Genie generated for them.</p></div></div></div>
+<div style="display:flex;gap:28px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output &mdash; before curation</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">revenue last month&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8B0000">FAIL</span><br>
+&nbsp;&nbsp;cancelled orders included<br>
+top 5 customers&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8B0000">FAIL</span><br>
+&nbsp;&nbsp;test accounts included<br>
+orders by region&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#1F6F43">PASS</span><br>
+<br>
+<span style="color:#8B0000">1 / 3</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output &mdash; after</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">revenue last month&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#1F6F43">PASS</span><br>
+top 5 customers&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#1F6F43">PASS</span><br>
+orders by region&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#1F6F43">PASS</span><br>
+<br>
+<span style="color:#1F6F43">3 / 3</span><br>
+<br>
+Same questions. Same data.<br>
+Two instructions added.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Note what did not change</p><p style="font-size:27px;color:#4A5568;line-height:1.45">No model was swapped, no prompt tuned, no code written. The improvement came entirely from writing down what the organisation already knew.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">96</p>
+<aside>Run this live after the Knowledge Store additions, so the room sees one to three in the same sitting.
+
+Before you run it, ask people to predict which of the three cases fails. Most will get the revenue one and miss the top-five, because the test-account problem is invisible unless you know the data.
+
+The "orders by region" case passing from the start is deliberate and useful. It shows the suite is not simply failing everything — Genie is competent at the questions that need no business knowledge, and that is the honest baseline.
+
+The right-hand panel is the summary. No model change, no prompt engineering, no deployment. Two sentences of curation moved one of three to three of three. That is a very unusual effort-to-outcome ratio in this field and it is worth naming as such.
+
+Then set the expectation for real use: your first suite will be mostly failures, and that is the point. The failures are a prioritised list of the definitions your organisation has never written down.
+
+Likely question: "Can this run in CI?" Through the API, yes, and that is the right home for it. Treat the space's configuration as code and the suite as its test run.
+
+Timing: 10 minutes.</aside>
+</section>

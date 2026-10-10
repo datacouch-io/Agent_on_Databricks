@@ -1,0 +1,49 @@
+<section id="s3-trace" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">If you cannot query it, you cannot operate it</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="background:#1E242E;padding:30px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#7F8C9B">@mlflow.trace(span_type=<span style="color:#A7E8BD">"RETRIEVER"</span>)</span><br>
+<span style="color:#FF9E64">def</span> <span style="color:#8BD5FF">search_docs</span>(query, k=<span style="color:#A7E8BD">3</span>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+<br>
+mlflow.tracing.set_destination(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8BD5FF">UnityCatalog</span>(catalog, schema)<br>
+)</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:26px;font-weight:700;color:#8B0000">Three span types carry the meaning</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.5"><span style="font-family:'JetBrains Mono', Courier New, monospace">AGENT</span> &nbsp;the whole turn<br><span style="font-family:'JetBrains Mono', Courier New, monospace">TOOL</span> &nbsp;&nbsp;&nbsp;one call and its arguments<br><span style="font-family:'JetBrains Mono', Courier New, monospace">RETRIEVER</span> &nbsp;what came back, and from where</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="background:#1E242E;padding:30px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#FF9E64">SELECT</span> request_id, status.code,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;execution_duration<br>
+<span style="color:#FF9E64">FROM</span> cat.sch.mlflow_experiment_trace_spans<br>
+<span style="color:#FF9E64">WHERE</span> span_type = <span style="color:#A7E8BD">'TOOL'</span></p>
+</div>
+<div style="display:flex;gap:18px;align-items:center;background:#F6E9E9;padding:26px 30px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0">
+<x-icon name="Warning" style="color:#8B0000;width:44px;height:44px"></x-icon>
+<p style="font-size:26px;color:#14181F;line-height:1.4"><b>Not <span style="font-family:'JetBrains Mono', Courier New, monospace">status_code</span>.</b> Trace tables are OpenTelemetry &mdash; <span style="font-family:'JetBrains Mono', Courier New, monospace">status</span> is a struct. The obvious query fails with <span style="font-family:'JetBrains Mono', Courier New, monospace">UNRESOLVED_COLUMN</span>.</p>
+</div>
+<p style="font-size:29px;color:#4A5568;line-height:1.5">Traces in a catalog are <b style="color:#14181F">an ordinary table</b>. Latency by tool, retrieval hit rate, which document grounded which answer &mdash; all of it is SQL.</p>
+</div>
+</div>
+<p style="font-size:30px;color:#14181F;line-height:1.45">A screenshot of a trace is a debugging aid. <b>A table of traces is an operations practice.</b></p>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">68</p>
+<aside>Lab 3B. One decorator per function, one destination, and the agent becomes observable.
+
+Show the trace UI first — the nested spans, the arguments, the retrieved chunks — because it is immediately legible. Then move straight to the SQL, because the UI is where you look at one interaction and the table is where you learn something about a thousand.
+
+Span types are not decoration. Setting span_type correctly is what makes RETRIEVER spans show retrieved documents in the UI and what lets MLflow's built-in retrieval scorers find your retrieval step in Session 6. Mislabel it and the evaluation silently has nothing to grade.
+
+The gotcha is worth the thirty seconds: everyone writes status_code, and the query fails. These are OpenTelemetry spans, so it is status.code. Cheaper to hear it here than to debug it in a lab.
+
+Expected question: "Does tracing cost latency?" The spans are written asynchronously; the overhead is small and you can sample in production. The cost of not having them is an agent you can only describe anecdotally.
+
+Timing: 5 minutes.</aside>
+</section>

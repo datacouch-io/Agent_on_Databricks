@@ -6,6 +6,12 @@
 **Compute:** Serverless
 
 > **Verified on 2026-09-30.** Every number and screenshot below is from a real run.
+>
+> ⚠️ **`serving_agent_v3.py` was rewritten on 2026-10-09 and has not been re-run.** It is
+> now Lab 6B's `serving_agent.py` with only `SYSTEM` changed — it gained the tool loop and
+> order lookup the champion gained on the same date. Without that, champion and challenger
+> differed in two ways and the canary measured neither. The numbers below predate the
+> change; re-run the lab once on a live workspace and replace them.
 
 ---
 
@@ -62,11 +68,26 @@ Run **cells 0–3**. Cell 2 writes `serving_agent_v3.py`; the only functional ch
 Lab 6B's agent is three lines:
 
 ```diff
--SYSTEM = ("You are a support agent … Answer only from the policy excerpts you
--          retrieve. If they do not cover the question, say so. …")
-+SYSTEM = ("You are a helpful support agent … Use the policy excerpts you retrieve.
-+          Always give the customer a useful, confident answer. …")
+-SYSTEM = """You are a support agent … Answer only from the policy excerpts you
+-retrieve and the order facts you look up. If the excerpts do not cover the
+-question, say so rather than guessing. …"""
++SYSTEM = ("You are a helpful support agent … Use the policy excerpts you retrieve
++          and the order facts you look up. Always give the customer a useful,
++          confident answer. …")
 ```
+
+> 🚨 **One variable, or the canary measures nothing.** `serving_agent_v3.py` is the
+> champion file with `SYSTEM` swapped and **nothing else** — same `RETRIEVAL_K`,
+> `MAX_TOKENS`, `MAX_STEPS`, audience filter, tool schemas and tool loop. Verify it:
+>
+> ```python
+> # champion vs challenger, constant by constant
+> {k for k in set(a) | set(b) if a.get(k) != b.get(k)}   # -> {'SYSTEM'}
+> ```
+>
+> This lab's whole argument is that the control column is the experiment. A challenger
+> that differs in two ways has no control — you would be reading the sum of two changes
+> and attributing it to one.
 
 A realistic change, not a strawman — it is what gets requested after someone reads a week
 of refusals in the logs. Retrieval is untouched.
@@ -363,6 +384,46 @@ capstone assumes a working `@champion`. The model and its aliases are removed wi
 | It **disclosed an `agent_only` document** | 5 | `DOC-006-C00` quoted verbatim |
 | The brick exposes no metadata filter | 5 | Settings is Instructions + Description |
 | A query-time filter is a convention, not a control | 5 | a second consumer did not inherit it |
+
+## 5b. Clean up — the most expensive things you will build on this course
+
+Everything in this lab bills, and two of them bill whether or not anyone is using them.
+Do this at the end of the session, not at the end of the course.
+
+| What | Bills while idle? | How to remove |
+|---|---|---|
+| Agent serving endpoint (from 6B, canaried here) | scale-to-zero, small | `databricks agents delete-deployment …` |
+| **Agent Bricks Knowledge Assistant** | **yes** | UI only — deleting the agent removes its endpoint |
+| **Vector Search endpoint** (if 3A's is still up) | **yes, plus ~24h after** | `databricks vector-search-endpoints delete-endpoint …` |
+
+```bash
+# 1. the agent deployment and its serving endpoint
+databricks agents delete-deployment agents_labs.retail.support_agent
+
+# 2. Vector Search, if you have finished the RAG labs
+databricks vector-search-indexes delete-index agents_labs.retail.support_chunks_idx
+databricks vector-search-endpoints delete-endpoint agents-labs-vs
+```
+
+**3. The Knowledge Assistant has no CLI delete.** In the workspace:
+**Agents → `retail-policy-assistant` → … → Delete.** It provisioned *two* endpoints; both
+go with the agent.
+
+> 🚨 **It will refuse a direct endpoint delete** — *"Please delete the tile to delete all
+> associated endpoints"*. Delete the agent tile, not the endpoint.
+
+Confirm you are clean:
+
+```bash
+databricks serving-endpoints list
+databricks vector-search-endpoints list-endpoints
+```
+
+> 💡 **Registered model versions and aliases cost nothing** and are worth keeping — they
+> are the record of what you deployed. They go with the catalog at course end; see
+> [`TEARDOWN.md`](../TEARDOWN.md).
+
+---
 
 ## 6. What You Hand In
 

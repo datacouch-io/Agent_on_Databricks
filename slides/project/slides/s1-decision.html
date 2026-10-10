@@ -1,0 +1,42 @@
+<section id="s1-decision" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">One question separates a workflow from an agent</h2>
+<div style="display:flex;gap:28px;align-items:center">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:34px;border:2px solid #8B0000;border-radius:14px">
+<p style="font-size:30px;font-weight:700;line-height:1.3">Do you know the sequence of steps before you see the data?</p>
+</div>
+<x-shape kind="arrow-right" style="background:#8B0000;width:88px;height:44px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:34px;border-radius:14px">
+<p style="font-size:28px;font-weight:700;color:#8B0000">YES &rarr; Workflow</p>
+<p style="font-size:26px;color:#4A5568;line-height:1.4">Cheaper, testable, fails predictably</p>
+</div>
+</div>
+<div style="display:flex;gap:28px;align-items:center">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:34px;border:1px solid #E3E6EA;border-radius:14px">
+<p style="font-size:30px;font-weight:700;line-height:1.3">No &mdash; and does the next step depend on what the model finds?</p>
+</div>
+<x-shape kind="arrow-right" style="background:#8B0000;width:88px;height:44px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#14181F;padding:34px;border-radius:14px">
+<p style="font-size:28px;font-weight:700;color:#F2F4F7">YES &rarr; Agent</p>
+<p style="font-size:26px;color:#B8C1CC;line-height:1.4">instructions &middot; model &middot; tools &middot; state &middot; a stopping condition</p>
+</div>
+</div>
+<div style="display:flex;gap:40px;padding:12px 0 0 0">
+<p style="flex:1;font-size:29px;color:#4A5568;line-height:1.5"><b style="color:#14181F">Reach for an agent when the control flow itself</b> has to be decided at runtime &mdash; not because the problem involves an LLM.</p>
+<p style="flex:1;font-size:29px;color:#4A5568;line-height:1.5"><b style="color:#14181F">Two of the four lab scenarios are workflows.</b> If your group called three or four of them agents, you have found the bias this exercise exists to correct.</p>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">9</p>
+<aside>ADDED TOPIC — the outline says "when to use each" but offers no test. This is the test.
+
+Four words get used interchangeably and should not be. An LLM call turns input into output. A workflow is a sequence of steps you wrote. RAG is a specific workflow — retrieve, then generate. An agent is different in exactly one respect: the model decides what to do next, in a loop, until a stopping condition is met.
+
+Analogy: a workflow is a recipe. An agent is a cook who tastes and adjusts.
+
+The trap in Lab 1A is the invoice scenario — four thousand PDFs with varying layouts. "The layouts vary" feels like it needs reasoning. It needs a good extractor with a fixed output schema. Wrapping it in an agent multiplies your token cost by the loop count and gives you four thousand independent chances to do something surprising.
+
+Expected question: "What if I am not sure?" Default to the workflow. You can always promote it; you rarely demote an agent once it ships.
+
+Timing: 3 minutes.</aside>
+</section>

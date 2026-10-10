@@ -1,0 +1,34 @@
+<section id="s4-t1-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 4A &middot; console &middot; every click screenshotted in the guide</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: build the Retail Customer Orders space</h2>
+<div style="display:flex;gap:36px"><div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">1</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Genie &rarr; <b>New</b>. Name it <i>Retail Customer Orders</i>.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">2</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Pick the SQL warehouse that will execute the queries.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">3</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Add the <b>Sources</b>: <span style="font-family:'JetBrains Mono', Courier New, monospace">orders</span>, <span style="font-family:'JetBrains Mono', Courier New, monospace">customers</span>. Nothing else is reachable.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">4</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Ask &ldquo;what was our revenue last month?&rdquo; &mdash; and <b>read the SQL</b>.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:60px;font-size:27px;font-weight:700;color:#8B0000">5</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Add one <b>Instruction</b>. Ask again. Compare the queries.</p></div></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Step 4 &mdash; before curation</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5"><span style="color:#8B0000">SELECT sum(total_amount)</span><br>
+<span style="color:#8B0000">FROM orders</span><br>
+<span style="color:#8B0000">WHERE order_date &gt;= ...</span><br>
+<br>
+-&gt; 184,220.00<br>
+<br>
+<span style="color:#8B0000">Cancelled orders included.</span><br>
+<span style="color:#8B0000">No warning. No hedge.</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Step 5 &mdash; after one instruction</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5"><span style="color:#1F6F43">SELECT sum(total_amount)</span><br>
+<span style="color:#1F6F43">FROM orders</span><br>
+<span style="color:#1F6F43">WHERE order_date &gt;= ...</span><br>
+<span style="color:#1F6F43">&nbsp;&nbsp;AND status &lt;&gt; 'cancelled'</span><br>
+<br>
+-&gt; 171,905.00<br>
+<br>
+<span style="color:#1F6F43">The rule now travels to</span><br>
+<span style="color:#1F6F43">every caller of this space.</span></p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">81</p>
+<aside>This is a live demonstration, not a slide to read. The lab guide has a screenshot for every click, including creating the space from an empty workspace, so people can follow afterwards at their own pace.
+
+Lead with the failure. Create the space, add the two tables, ask for last month's revenue, and read the generated SQL aloud. It sums total_amount with a date filter. There is no status predicate. The number is wrong by the value of every cancelled order, and nothing in the answer suggests a problem — it is a clean figure with a clean query.
+
+Pause there and ask the room how they would have caught it. The usual answer is "we would have checked the SQL", which is exactly the point: that only works while a person reviews every question, which is not the deployment anyone is planning.
+
+Then add one instruction — revenue excludes orders with status cancelled — and ask again. The predicate appears. Two numbers on the screen, twelve thousand pounds apart, and the difference is one sentence of curation.
+
+Likely question: "Where did the second number come from being right?" It is right because someone wrote down the rule. Genie did not learn it and could not have inferred it; a cancelled order is a row with a value in a total column.
+
+Timing: 20 minutes of guided build.</aside>
+</section>

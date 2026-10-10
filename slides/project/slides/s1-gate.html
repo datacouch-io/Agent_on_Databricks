@@ -1,0 +1,40 @@
+<section id="s1-gate" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:112px 128px 136px;display:flex;flex-direction:column;gap:28px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">A rule in the prompt is a request. A rule in code is a control.</h2>
+<div style="display:flex;gap:44px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px">
+<div style="display:flex;flex-direction:column;gap:14px;background:#1E242E;padding:34px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:21px;color:#C5CFD9;line-height:1.5"><span style="color:#FF9E64">def</span> <span style="color:#8BD5FF">needs_human</span>(name, args): <span style="color:#7F8C9B"># the reason, or None</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">if</span> name != <span style="color:#A7E8BD">"issue_refund"</span>: <span style="color:#FF9E64">return</span> <span style="color:#FF9E64">None</span><br>&nbsp;&nbsp;&nbsp;&nbsp;amt, oid = <span style="color:#8BD5FF">float</span>(args[<span style="color:#A7E8BD">"amount"</span>]), args[<span style="color:#A7E8BD">"order_id"</span>]<br>&nbsp;&nbsp;&nbsp;&nbsp;total = ORDERS[oid][<span style="color:#A7E8BD">"total"</span>]<br><br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">if</span> amt &gt;= <span style="color:#A7E8BD">50.0</span>:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#FF9E64">return</span> <span style="color:#A7E8BD">"over the limit"</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">if</span> amt &gt; total:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#FF9E64">return</span> <span style="color:#A7E8BD">"over-refund"</span><br>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">if</span> paid(oid) + amt &gt; total: <span style="color:#FF9E64">return</span> <span style="color:#A7E8BD">"cumulative"</span></p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;padding:30px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">step 1: calls issue_refund(<br>&nbsp;&nbsp;{'order_id': 'ORD-1042',<br>&nbsp;&nbsp;&nbsp;'amount': 38.0, ...})<br>&nbsp;&nbsp;<span style="color:#8B0000;font-weight:700">HUMAN APPROVAL REQUIRED</span><br>&nbsp;&nbsp;<span style="color:#8B0000;font-weight:700">(&gt;= GBP 50) -&gt; REFUSED</span></p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:10px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0">
+<p style="font-size:28px;font-weight:700;color:#8B0000">Read that output again</p>
+<p style="font-size:28px;color:#14181F;line-height:1.5">The refund was <b>GBP 38</b>. The threshold is <b>GBP 50</b>. The gate fired anyway &mdash; and it was right to.</p>
+</div>
+<p style="font-size:29px;color:#4A5568;line-height:1.5">The order total was 38. The customer asked for <b style="color:#14181F">a full refund plus compensation</b>. The model composed a larger amount, and the arithmetic that mattered happened in <span style="font-family:'JetBrains Mono', Courier New, monospace">args</span>, not in the order record.</p>
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:27px;color:#4A5568;line-height:1.45"><b style="color:#14181F">Gate on the argument, not the context.</b></p>
+<p style="font-size:27px;color:#4A5568;line-height:1.45">A gate that compared the limit against the <i>order total</i> instead of the argument would have let this through.</p>
+</div>
+</div>
+</div>
+<p style="font-size:30px;color:#14181F;line-height:1.45">The same instruction written into the system prompt holds most of the time. <b>Most of the time is not a control.</b></p>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">17</p>
+<aside>This is the slide to slow down on. It is five lines of code and it carries the single most important idea in Session 1.
+
+Lab 1B ships with the rule in two places — once in the system prompt, once in needs_human(). Delete the code gate, keep the prompt, and run the compensation request several times. It usually holds. Usually is the problem: you cannot write a test for usually, and you cannot explain usually to a risk committee.
+
+Then the subtler half. Walk the audience through the arithmetic out loud: order total 38, threshold 50, gate fires. Someone will say it is a bug. It is not. The model proposed 38 for the refund plus goodwill on top, and the amount in args crossed 50. Had we gated on the order total from the database — the "real" number — the larger payment would have gone through unapproved.
+
+The rule to take away: gate on the value being committed, not on the value you expect it to be derived from.
+
+Expected question: "Should the model know the gate exists?" Yes — tell it in the prompt so it can explain the refusal to the customer. Just never rely on the prompt to enforce it.
+
+Timing: 6 minutes. Do not rush this one.</aside>
+</section>

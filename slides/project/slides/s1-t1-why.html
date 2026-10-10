@@ -1,0 +1,51 @@
+<section id="s1-t1-why" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Why choosing wrong multiplies your cost and your risk</h2>
+<div style="display:flex;gap:36px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#F6E9E9;padding:34px;border-left:8px solid #8B0000;border-radius:0 14px 14px 0">
+<p style="font-size:30px;font-weight:700;color:#8B0000">The problem it solves</p>
+<p style="font-size:28px;color:#14181F;line-height:1.45">Teams reach for an agent because the tooling makes it easy, not because the problem needs one. The bill and the incident report arrive later.</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.45">An agent wrapped around a fixed task pays for the loop every time, and gives you one fresh chance per request to do something unexpected.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:200px;font-size:26px;font-weight:700;color:#8B0000">Cost</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Tokens multiply by loop count. A 4-step agent costs roughly 4 workflows.</p>
+</div>
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:200px;font-size:26px;font-weight:700;color:#8B0000">Latency</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Each step is a round trip. Users feel every one of them.</p>
+</div>
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:200px;font-size:26px;font-weight:700;color:#8B0000">Testability</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">A workflow has paths you can enumerate. An agent has a distribution.</p>
+</div>
+<div style="display:flex;gap:22px;align-items:center;background:#FFFFFF;padding:24px 28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:200px;font-size:26px;font-weight:700;color:#8B0000">Blast radius</p>
+<p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Every tool you expose is something it may call unprompted.</p>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:24px;align-items:center;background:#14181F;padding:32px 38px;border-radius:14px">
+<x-icon name="Activity" style="color:#FF9E64;width:54px;height:54px"></x-icon>
+<div style="width:1500px;display:flex;flex-direction:column;gap:8px">
+<p style="font-size:27px;font-weight:700;color:#FF9E64">Real scenario &mdash; 4,000 invoice PDFs with varying layouts</p>
+<p style="font-size:29px;color:#F2F4F7;line-height:1.4">&ldquo;The layouts vary&rdquo; feels like it needs reasoning. It needs a good extractor with a fixed output schema. As an agent: 4,000 loops, 4,000 chances to improvise on a financial document, and no way to diff this month's run against last month's.</p>
+</div>
+</div>
+<p style="font-size:30px;color:#14181F;line-height:1.45">The upside is real too &mdash; and it is specific: <b>when the next step genuinely depends on what you just found</b>, a workflow has to enumerate every branch, and an agent does not.</p>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">8</p>
+<aside>This is the commercial argument, and it is the slide a sponsor in the room will remember.
+
+Work the four rows as a single sentence: an agent is an architecture where you trade determinism for flexibility, and you pay for that trade in tokens, latency, test coverage and exposure. None of those costs is a reason never to build one. All of them are reasons to know why you did.
+
+The invoice scenario is the trap in Lab 1A and it catches most groups. Say the numbers out loud: four thousand documents, a loop that averages three steps, so twelve thousand model calls instead of four thousand — and a financial document is exactly where you least want creative variation.
+
+Then be fair to agents. The closing line matters: when the control flow itself depends on what the model finds, a workflow author has to anticipate every branch. That is the case where an agent is not indulgence but the only honest design.
+
+Likely question: "Our product manager wants to say we shipped an agent." Then ship a workflow and call the roadmap item an agent. The naming argument is cheaper to lose than the on-call rota.
+
+Timing: 4 minutes.</aside>
+</section>

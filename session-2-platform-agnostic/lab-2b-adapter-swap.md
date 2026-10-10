@@ -186,6 +186,19 @@ steps.
 > and the model finding something to do with it. It is a symptom of weaker retrieval, and
 > it presents as **being extra helpful.**
 
+> 🚨 **Do not stop here and conclude the retrievers are equivalent.** This step is
+> designed to look like a draw, because on a question whose wording matches the documents
+> it genuinely is one. The difference is real and it is two steps away:
+>
+> - **Step 5** shows they retrieved almost entirely *different documents* to produce these
+>   near-identical answers — and that keyword scores the correct document at **exactly
+>   zero** on a paraphrased question.
+> - **Step 6** shows why you cannot paper over that with a relevance threshold.
+>
+> **The question this step is really asking** is the one in *What You Learned*: if you
+> could not tell the difference by reading the answers, how would you ever know your
+> retrieval had degraded? Keep that open until Step 5 answers it.
+
 ---
 
 ### Step 5 — Compare what they *retrieved* (10 min)

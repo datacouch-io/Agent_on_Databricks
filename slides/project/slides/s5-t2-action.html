@@ -1,0 +1,37 @@
+<section id="s5-t2-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 5B &middot; notebook &middot; one agent, two tokens</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: ask the server what you may do</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#7F8C9B"># MCP discovery, as the full principal</span><br>
+r = requests.post(<br>
+&nbsp;&nbsp;<span style="color:#A7E8BD">f"{HOST}/api/2.0/mcp/functions/main/agents"</span>,<br>
+&nbsp;&nbsp;headers={<span style="color:#A7E8BD">"Authorization"</span>: <span style="color:#A7E8BD">f"Bearer {tok}"</span>},<br>
+&nbsp;&nbsp;json={<span style="color:#A7E8BD">"method"</span>: <span style="color:#A7E8BD">"tools/list"</span>},<br>
+)<br>
+[t[<span style="color:#A7E8BD">"name"</span>] <span style="color:#FF9E64">for</span> t <span style="color:#FF9E64">in</span> r.json()[<span style="color:#A7E8BD">"tools"</span>]]</p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5"><span style="color:#1F6F43">as agents-labs-full:</span><br>
+['get_order',<br>
+&nbsp;'search_policy',<br>
+&nbsp;'issue_refund']<br>
+<br>
+<span style="color:#8B0000">as agents-labs-restricted:</span><br>
+['get_order',<br>
+&nbsp;'search_policy']<br>
+<br>
+Same endpoint. Same request.<br>
+Different token.</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Nothing in the agent changed</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Same notebook, same tool-building code, same system prompt. The tool list came from the server, and the server answered according to the grants.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Try this</p><p style="font-size:27px;color:#14181F;line-height:1.45">Revoke <span style="font-family:'JetBrains Mono', Courier New, monospace">EXECUTE</span> on <span style="font-family:'JetBrains Mono', Courier New, monospace">issue_refund</span> from the full principal and re-run <span style="font-family:'JetBrains Mono', Courier New, monospace">tools/list</span>. Watch the agent's capability shrink without a single line of code being edited.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">112</p>
+<aside>Three cells and it is the most convincing thing in the session.
+
+Run it as the full principal, print the list, then change one variable — the token — and print again. Three tools become two. Nothing else in the notebook moved.
+
+The white panel is the line to repeat. The agent did not decide what it could do. It asked, and the platform answered based on grants. That is the inversion this whole session has been building toward: capability is a property of the identity, not of the code.
+
+Set the "try this" exercise going, because it makes the point in the opposite direction. Revoking a grant narrows a running agent's abilities with no deployment, no restart and no code review. For an incident response that is an extremely useful property — you can take a capability away from every client at once.
+
+If anyone asks why we use raw requests rather than an MCP client library: the lab wants the wire protocol visible. In production use a client library; here, seeing tools/list return two entries instead of three is the lesson.
+
+Likely question: "Does the model get told a tool was withheld?" No. It is absent from the list, so the model has no knowledge of it. That is the design, and it is stronger than a refusal.
+
+Timing: 10 minutes of lab, 3 minutes on this slide.</aside>
+</section>

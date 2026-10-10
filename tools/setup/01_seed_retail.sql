@@ -1,4 +1,4 @@
--- Shared dataset for Sessions 3-7 of the Agents on Databricks course.
+-- Shared dataset for Sessions 3-7 of the Building Agentic AI Systems on Databricks course.
 -- Small on purpose: every lab must run inside a 2-hour session.
 
 CREATE TABLE IF NOT EXISTS agents_labs.retail.customers (

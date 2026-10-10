@@ -1,0 +1,41 @@
+<section id="s5-t1-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 5A &middot; notebook &middot; SQL then Python</p>
+<h2 style="font-size:60px;font-weight:600;line-height:1.1">See it in action: create, grant, call</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#7F8C9B">-- the tool</span><br>
+<span style="color:#FF9E64">CREATE OR REPLACE FUNCTION</span><br>
+&nbsp;&nbsp;main.agents.get_order(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;order_id <span style="color:#FF9E64">STRING</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">COMMENT</span> <span style="color:#A7E8BD">'Order id, e.g. ORD-1042'</span>)<br>
+<span style="color:#FF9E64">RETURNS TABLE</span> (status <span style="color:#FF9E64">STRING</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;total <span style="color:#FF9E64">DOUBLE</span>)<br>
+<span style="color:#FF9E64">COMMENT</span> <span style="color:#A7E8BD">'Look up one order by id.'</span><br>
+<span style="color:#FF9E64">RETURN SELECT</span> status, total<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">FROM</span> main.retail.orders<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">WHERE</span> order_id = get_order.order_id;</p></div><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#7F8C9B">-- the permission</span><br>
+<span style="color:#FF9E64">GRANT EXECUTE ON FUNCTION</span><br>
+&nbsp;&nbsp;main.agents.get_order<br>
+&nbsp;&nbsp;<span style="color:#FF9E64">TO</span> <span style="color:#A7E8BD">`c3f1...-application-id`</span>;<br>
+<br>
+<span style="color:#7F8C9B"># the agent side</span><br>
+<span style="color:#FF9E64">from</span> unitycatalog.ai.core.databricks \<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">import</span> DatabricksFunctionClient<br>
+<br>
+c = DatabricksFunctionClient()<br>
+c.get_function(<span style="color:#A7E8BD">"main.agents.get_order"</span>)<br>
+<span style="color:#7F8C9B"># -&gt; schema + description, ready</span><br>
+<span style="color:#7F8C9B">#    to hand to the model as a tool</span></p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">The gotcha that cost us twenty minutes</p><p style="font-size:27px;color:#14181F;line-height:1.45"><span style="font-family:'JetBrains Mono', Courier New, monospace">PRINCIPAL_DOES_NOT_EXIST: Could not find principal with name agents-labs-restricted</span>. Unity Catalog wants the <b>application ID</b>, not the display name &mdash; and two of our service principals shared that name.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Expected output</p><p style="font-size:27px;color:#4A5568;line-height:1.45"><span style="font-family:'JetBrains Mono', Courier New, monospace">get_order('ORD-1042')</span> &rarr; one row: <span style="font-family:'JetBrains Mono', Courier New, monospace">delivered, 38.0</span>. The agent never saw the <span style="font-family:'JetBrains Mono', Courier New, monospace">orders</span> table, and has no <span style="font-family:'JetBrains Mono', Courier New, monospace">SELECT</span> on it.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">106</p>
+<aside>Two cells and a grant. Walk the left block first and point at the three mappings as you go: the parameter COMMENT is the argument description the model reads, the function COMMENT is the tool description, and the RETURNS TABLE clause is the output contract.
+
+Then the grant, and the gotcha. PRINCIPAL_DOES_NOT_EXIST with a name you can see in the admin console is a confusing error. Unity Catalog resolves service principals by application ID, and we had two principals sharing a display name, so the friendly name resolved to nothing. Use the application ID and the problem disappears. Worth thirty seconds because it will happen to someone in the room.
+
+The right-hand panel is the payoff. The agent called a function and received one row. It has no SELECT on the orders table and cannot get one by asking differently. Least privilege, expressed as a function signature rather than as application logic.
+
+The DatabricksFunctionClient line matters for the next topic: it reads the catalog and produces the tool schema. You do not hand-write the JSON any more — the catalog is the source.
+
+Likely question: "What if I change the function?" Callers pick up the new signature and description. That is a feature and a risk: a comment edit changes model behaviour, so review it like a prompt change.
+
+Timing: 20 minutes of lab, 4 minutes on this slide.</aside>
+</section>

@@ -1,0 +1,42 @@
+<section id="s6-t2-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 6A &middot; notebook &middot; read the zeros</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: the judge that was wrong</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">The case</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">input: &ldquo;I want a refund for an<br>
+order I placed 90 days ago&rdquo;<br>
+<br>
+agent: &ldquo;Our returns policy allows<br>
+refunds within 30 days of<br>
+delivery (DOC-002). This order<br>
+was placed 90 days ago, so I'm<br>
+not able to refund it. I can<br>
+ask a colleague to review the<br>
+circumstances if you'd like.&rdquo;</p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">The verdict</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">correctness/value&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#8B0000">0</span><br>
+<br>
+correctness/rationale<br>
+<span style="color:#8B0000">"The response does not</span><br>
+<span style="color:#8B0000">&nbsp;provide the refund the user</span><br>
+<span style="color:#8B0000">&nbsp;requested."</span><br>
+<br>
+follows_expectations/value <span style="color:#8B0000">0</span><br>
+<br>
+<span style="color:#1F6F43">The agent cited policy,</span><br>
+<span style="color:#1F6F43">declined, and offered a</span><br>
+<span style="color:#1F6F43">route. That is the ideal</span><br>
+<span style="color:#1F6F43">answer.</span></p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">The fix is not in the agent</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Segment the dataset. Score answerable questions for correctness; score unanswerable ones for whether they <i>declined and cited a reason</i>. One quality score across both mixes two judgements.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Extraction gotcha</p><p style="font-size:27px;color:#14181F;line-height:1.45">Results columns are flat &mdash; <span style="font-family:'JetBrains Mono', Courier New, monospace">correctness/value</span>, <span style="font-family:'JetBrains Mono', Courier New, monospace">correctness/rationale</span>. Our first script looked for nested assessment dicts, found none, and reported <b>no failures</b>.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">131</p>
+<aside>Put this case on screen and read both sides aloud. It does the work of the whole session.
+
+The agent's answer is the one you would want from a human: it names the policy, cites the document, gives the reason, declines clearly, and offers an escalation path. The judge scored it zero and said why — the refund was not provided. The rationale is not nonsense; it is a correct observation against the wrong criterion for this row.
+
+Ask the room what they would have done with only the 0.23 aggregate. The honest answer is that they would have changed the agent, and the agent was already right.
+
+Then give the fix, because it is constructive rather than just cautionary. Segment the dataset: answerable rows get correctness, unanswerable rows get a different criterion — did it decline, did it cite a reason, did it avoid inventing an exception. Those are two different questions and one scorer cannot hold both.
+
+Mention the extraction gotcha again here because it compounded the problem: the script meant to surface these rationales reported no failures at all, due to a wrong assumption about the column shape. Two instruments, both wrong, same run.
+
+Likely question: "How do I know when it is the judge and not the agent?" Read the rationale against the input. If the rationale describes the output accurately but applies a rule the question did not invoke, it is the criterion.
+
+Timing: 5 minutes.</aside>
+</section>

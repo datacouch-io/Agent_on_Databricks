@@ -1,0 +1,31 @@
+<section id="s6-t3-how" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">How an agent becomes an endpoint</h2>
+<div style="display:flex;gap:22px;align-items:center"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">1 &middot; Wrap</p><p style="font-size:24px;color:#4A5568;line-height:1.35">implement ResponsesAgent</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">2 &middot; Log</p><p style="font-size:24px;color:#4A5568;line-height:1.35">mlflow.pyfunc.log_model, with resources</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">3 &middot; Register</p><p style="font-size:24px;color:#4A5568;line-height:1.35">a version under catalog.schema.name</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">4 &middot; Deploy</p><p style="font-size:24px;color:#4A5568;line-height:1.35">agents.deploy() creates the endpoint</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#14181F;padding:28px;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#F2F4F7">5 &middot; Query</p><p style="font-size:24px;color:#B8C1CC;line-height:1.35">HTTP, authenticated as a principal</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55">mlflow.pyfunc.log_model(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;python_model=SupportAgent(),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;artifact_path=<span style="color:#A7E8BD">"agent"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;resources=[<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DatabricksVectorSearchIndex(INDEX),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DatabricksFunction(FN),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DatabricksServingEndpoint(MODEL),<br>
+&nbsp;&nbsp;&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;&nbsp;&nbsp;registered_model_name=NAME,<br>
+)<br>
+agents.deploy(NAME, version)</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">The <span style="font-family:'JetBrains Mono', Courier New, monospace">resources</span> list is the step people miss</p><p style="font-size:27px;color:#4A5568;line-height:1.45">It declares what the endpoint must be allowed to reach &mdash; the index, the functions, the model. Omit one and the agent deploys cleanly and then fails at runtime with a permission error on its first real question.</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EDF0F3;padding:30px 34px;border-radius:12px"><p style="font-size:28px;font-weight:700;color:#8B0000">Scale to zero</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Idle endpoints cost nothing, at the price of a cold start on the next request.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EDF0F3;padding:30px 34px;border-radius:12px"><p style="font-size:28px;font-weight:700;color:#8B0000">The review app</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Deployed alongside. Domain experts give structured feedback that lands in a table.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">142</p>
+<aside>Five steps, one of which causes nearly all the first-deployment failures.
+
+The resources list is that step. At log time you declare every governed thing the agent depends on — the vector index, each Unity Catalog function, the model serving endpoint it calls. Those declarations are what grant the deployed endpoint access on your behalf. Leave one out and nothing complains: the deployment succeeds, the endpoint comes up healthy, and the first question that needs the missing resource fails with a permission error. The symptom appears far from the cause.
+
+Worth tying back to Session 5: this is the same identity model. The endpoint runs as a principal, and the resources list is how that principal gets its grants.
+
+Mention scale-to-zero honestly. It makes development cheap and it means your first request after an idle period is slow. For an internal tool that is fine; for a customer-facing path, keep it warm.
+
+The review app is worth thirty seconds because it is the cheapest source of labelled data you will get. Domain experts answer structured questions about real responses, and the answers land in a table you can turn into evaluation rows.
+
+Likely question: "How long does a deployment take?" Several minutes for the endpoint to come up. Plan it as a deploy step, not an interactive one.
+
+Timing: 4 minutes.</aside>
+</section>

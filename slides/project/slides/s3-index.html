@@ -1,0 +1,61 @@
+<section id="s3-index" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">A Delta Sync index is a subscription, not a copy</h2>
+<div style="display:flex;gap:26px;align-items:center">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:26px;font-weight:700">Delta table</p>
+<p style="font-size:24px;color:#4A5568;line-height:1.35">primary key + Change Data Feed on</p>
+</div>
+<x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:26px;font-weight:700">Managed embeddings</p>
+<p style="font-size:24px;color:#4A5568;line-height:1.35">databricks-gte-large-en</p>
+</div>
+<x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#14181F;padding:28px;border-radius:12px">
+<p style="font-size:26px;font-weight:700;color:#F2F4F7">Vector index</p>
+<p style="font-size:24px;color:#B8C1CC;line-height:1.35">a UC object with its own grants</p>
+</div>
+</div>
+<div style="display:flex;gap:36px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px">
+<h3 style="font-size:32px;font-weight:600">Three decisions that bite later</h3>
+<div style="display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:26px 30px;border-radius:12px">
+<p style="font-size:27px;color:#4A5568;line-height:1.4"><b style="color:#14181F">Managed vs self-managed embeddings.</b> Managed means you never run an embedding job &mdash; and never choose the model.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:26px 30px;border-radius:12px">
+<p style="font-size:27px;color:#4A5568;line-height:1.4"><b style="color:#14181F">TRIGGERED vs CONTINUOUS.</b> Triggered is cheap and stale. Continuous keeps a warm cluster.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:26px 30px;border-radius:12px">
+<p style="font-size:27px;color:#4A5568;line-height:1.4"><b style="color:#14181F">Which columns to carry.</b> Anything you want to filter on must be in the index.</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px">
+<div style="background:#1E242E;padding:30px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55">index.similarity_search(<br>
+&nbsp;&nbsp;query_text=<span style="color:#A7E8BD">"laptop arrived smashed"</span>,<br>
+&nbsp;&nbsp;columns=[<span style="color:#A7E8BD">"doc_id"</span>, <span style="color:#A7E8BD">"text"</span>, <span style="color:#A7E8BD">"audience"</span>],<br>
+&nbsp;&nbsp;filters={<span style="color:#A7E8BD">"audience"</span>: <span style="color:#A7E8BD">"customer"</span>},<br>
+&nbsp;&nbsp;num_results=<span style="color:#A7E8BD">3</span>,<br>
+)</p>
+</div>
+<div style="display:flex;gap:18px;align-items:center;background:#F6E9E9;padding:26px 30px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0">
+<p style="font-size:27px;color:#14181F;line-height:1.4"><b>That filter lives in the caller.</b> Remember where you put it &mdash; in Session 7 something else calls this index and does not inherit it.</p>
+</div>
+</div>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">62</p>
+<aside>Lab 3A. The index build itself is about fifteen lines and one wait loop; the decisions around it are the content.
+
+Start with the subscription idea. You do not load documents into a vector database. You point an index at a Delta table with a primary key and Change Data Feed enabled, and the platform keeps it current. Insert a row, trigger a sync, search again — the new document is there and you wrote no pipeline.
+
+On the three decisions: managed embeddings are the right default and a real constraint. You trade model choice for never operating an embedding job. Self-managed is there when you need a domain-specific embedding model.
+
+The last box is a deliberate plant. We attach an audience column and filter on it in the caller, so internal-only documents never reach customer-facing answers. It works perfectly in this lab. In Session 7 an Agent Bricks Knowledge Assistant reads the same index, does not pass that filter, and discloses DOC-006. The control was never in the index — it was in our code. Where a control lives determines whether it is inherited.
+
+Expected question: "Should the filter be in the index instead?" You cannot filter an index into existence per-caller, but you can split indexes by audience, or put the rule in a Unity Catalog function that every caller must go through. Session 5 builds exactly that.
+
+Timing: 5 minutes.</aside>
+</section>

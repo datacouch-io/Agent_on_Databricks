@@ -282,6 +282,33 @@ thing keeping it from customers is that **this** caller remembered to pass
 | The filter keeps internal docs out of the context | 5 | `DOC-006` unreachable as customer |
 | …but it lives in the caller, not in a grant | 6 | [7B](../session-7-operations-and-multi-agent/lab-7b-rollout-and-agent-bricks.md) discloses it from this index |
 
+## 6b. Clean up — this one bills while it idles
+
+> 🚨 **A Vector Search endpoint is charged for as long as it exists, whether or not
+> anyone queries it.** It is not scale-to-zero. Databricks also keeps billing for roughly
+> **24 hours after you delete the index**, so "I deleted it at the end" is not the same as
+> "it stopped costing money at the end".
+
+**Lab 3B uses this index**, so keep it until you have finished Session 3. Delete it the
+day you finish the RAG labs — not at the end of the course.
+
+```bash
+# the index first, then the endpoint that serves it
+databricks vector-search-indexes delete-index agents_labs.retail.support_chunks_idx
+databricks vector-search-endpoints delete-endpoint agents-labs-vs
+```
+
+Confirm nothing is left:
+
+```bash
+databricks vector-search-endpoints list-endpoints
+```
+
+> 💡 **If you are on a shared class environment, check with your instructor first** — one
+> endpoint usually serves the whole cohort, and deleting it removes everyone's index.
+
+---
+
 ## 7. What You Hand In
 
 Nothing. [Lab 3B](lab-3b-traced-rag-agent.md) uses this index directly.

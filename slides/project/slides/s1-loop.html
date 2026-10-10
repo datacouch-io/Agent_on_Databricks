@@ -1,0 +1,47 @@
+<section id="s1-loop" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">The execution loop is the whole agent</h2>
+<div style="display:flex;gap:44px">
+<div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#1E242E;padding:36px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:25px;color:#C5CFD9;line-height:1.55"><span style="color:#FF9E64">for</span> step <span style="color:#FF9E64">in</span> range(<span style="color:#A7E8BD">1</span>, MAX_STEPS + <span style="color:#A7E8BD">1</span>):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;msg = client.chat.completions.create(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;model=MODEL, messages=messages, tools=TOOLS<br>
+&nbsp;&nbsp;&nbsp;&nbsp;).choices[<span style="color:#A7E8BD">0</span>].message<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">if not</span> msg.tool_calls:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">return</span> text_of(msg)<br>
+<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">for</span> tc <span style="color:#FF9E64">in</span> msg.tool_calls:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;args = json.loads(tc.function.arguments)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#FF9E64">if</span> needs_human(tc.function.name, args):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<span style="color:#7F8C9B"># the gate</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;result = call_with_retry(IMPL[name], **args)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;messages.append({<span style="color:#A7E8BD">"role"</span>: <span style="color:#A7E8BD">"tool"</span>, ...})</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:22px">
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:26px;font-weight:700;color:#8B0000">Live output</p>
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">step 1: calls get_order_status(<br>&nbsp;&nbsp;{'order_id': 'ORD-1042'})<br>&nbsp;&nbsp;&nbsp;&nbsp;-&gt; {'status': 'delivered',<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'total': 38.0}<br>step 2: model answers the customer</p>
+</div>
+<p style="font-size:29px;color:#4A5568;line-height:1.5"><b style="color:#14181F">Nothing parsed <span style="font-family:'JetBrains Mono', Courier New, monospace">ORD-1042</span> with a regex.</b> The model read the tool schema and chose the argument. That is the line between a workflow and an agent, in one step.</p>
+<div style="display:flex;gap:18px;align-items:center;background:#F6E9E9;padding:24px 28px;border-radius:12px">
+<x-icon name="Warning" style="color:#8B0000;width:44px;height:44px"></x-icon>
+<p style="font-size:27px;color:#14181F;line-height:1.4;width:560px"><b>MAX_STEPS is not optional.</b> Without it, a confused agent loops until your bill notices.</p>
+</div>
+</div>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">14</p>
+<aside>That is the entire agent. Everything else in this course is making one of those boxes governed, measured or safe.
+
+Walk the loop aloud once: ask the model; if it returned text and no tool calls, we are done; otherwise run each tool it picked, append the result to the conversation, and go round again.
+
+On stopping conditions: the model decides what to do next — you keep the decision about how long it may keep going. That separation is the point. If you routinely hit five of six steps, your tools are too granular.
+
+Lab exercise: set MAX_STEPS to 1 and re-run the happy path. A working agent now fails, and the sentinel tells you why.
+
+Expected question: "Why append tool results as messages rather than keeping state separately?" Because the model needs them in context to decide the next step. Session 7 shows what happens when a sub-agent is denied that context — it answers confidently and wrongly.
+
+Timing: 4 minutes.</aside>
+</section>

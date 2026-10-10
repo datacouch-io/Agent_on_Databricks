@@ -1,4 +1,4 @@
-# Hands-On Labs — AI Agents and Agents on Databricks (Expanded: 14 Labs / 7 Sessions + Capstone)
+# Hands-On Labs — Building Agentic AI Systems on Databricks (Expanded: 14 Labs / 7 Sessions + Capstone)
 
 Each session's single combined lab is split into two focused labs — one per distinct sub-skill — giving a mid-session checkpoint instead of one long build. Session structure, platform split (Sessions 1–2 agnostic, Sessions 3–7 Databricks), and the capstone are unchanged. Nothing new was invented: every lab maps to a bullet already in the outline, including a few (human approval, prompt-injection awareness, safe rollout/versioning) that were previously mentioned but had no dedicated hands-on.
 

@@ -1,0 +1,34 @@
+<section id="s2-t3-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 2A &middot; notebook &middot; two tools, one agent</p>
+<h2 style="font-size:60px;font-weight:600;line-height:1.1">See it in action: the model picks the path</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output &mdash; policy only</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">user: how long do I have to return<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;something?<br>
+<br>
+step 1: search_policy(<br>
+&nbsp;&nbsp;{'query': 'return window'})<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&gt; DOC-002 (score 0.82)<br>
+step 2: answer, cites DOC-002</p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output &mdash; both, in sequence</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">user: can I return ORD-1042?<br>
+<br>
+step 1: get_order_status(<br>
+&nbsp;&nbsp;{'order_id': 'ORD-1042'})<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&gt; delivered, 2026-09-28<br>
+step 2: search_policy(<br>
+&nbsp;&nbsp;{'query': 'return window days'})<br>
+&nbsp;&nbsp;&nbsp;&nbsp;-&gt; DOC-002 (score 0.84)<br>
+step 3: answer, cites DOC-002<br>
+&nbsp;&nbsp;&nbsp;&nbsp;and the order date</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Nothing routed these questions</p><p style="font-size:27px;color:#4A5568;line-height:1.45">There is no <span style="font-family:'JetBrains Mono', Courier New, monospace">if 'order' in question</span> anywhere in the lab. Both runs used the same agent, the same tools and the same system prompt.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Try this</p><p style="font-size:27px;color:#14181F;line-height:1.45">Ask &ldquo;can I return it?&rdquo; with no order id. Watch the agent ask you for one rather than invent it &mdash; and check the trace to confirm it called nothing.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">39</p>
+<aside>Run both questions live if you can; the contrast lands better in sequence than side by side.
+
+The first question needs one tool and takes two steps. The second needs two tools in a specific order and takes three. Same agent, same prompt, same tool set. Point at the step counts and name what changed: the data, not the code.
+
+The white panel is the sentence to repeat. There is no routing logic in this lab. No keyword check, no classifier, no if-statement choosing a path. People find this genuinely surprising after years of building intent classifiers, and it is the clearest payoff of the architecture so far.
+
+The "try this" exercise is the best one in Session 2. With no order id, a well-built agent asks. A badly-prompted one invents an id and reports on an order that does not exist. Which one you get depends mostly on your tool descriptions and your system prompt — so it is a direct test of the previous topic.
+
+Likely question: "What if it picks the wrong order of operations?" It sometimes will, and the trace in Session 3 is how you find out. The usual fix is the tool description, not the agent loop.
+
+Timing: 25 minutes of lab, 3 minutes on this slide.</aside>
+</section>

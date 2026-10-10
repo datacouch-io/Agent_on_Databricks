@@ -1,0 +1,38 @@
+<section id="s7-t2-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 7B &middot; console &middot; the course's sharpest result</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: the assistant discloses DOC-006</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Our agent, Session 3</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">search_docs('refund escalation')<br>
+&nbsp;&nbsp;filters={'audience':'customer'}<br>
+<br>
+&nbsp;&nbsp;-&gt; DOC-002 (customer)<br>
+&nbsp;&nbsp;-&gt; DOC-004 (customer)<br>
+<br>
+<span style="color:#1F6F43">DOC-006 never returned.</span><br>
+<span style="color:#1F6F43">The filter worked.</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Knowledge Assistant, same index</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">Q: &ldquo;how do staff escalate a<br>
+&nbsp;&nbsp;&nbsp;refund over the limit?&rdquo;<br>
+<br>
+A: &ldquo;Agents should escalate to a<br>
+team lead, who may authorise<br>
+up to &pound;500 ... (DOC-006)&rdquo;<br>
+<br>
+<span style="color:#8B0000">DOC-006 is marked</span><br>
+<span style="color:#8B0000">audience = internal.</span><br>
+<br>
+<span style="color:#8B0000">Disclosed, with a citation.</span></p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Same index. Same documents. Same platform.</p><p style="font-size:27px;color:#4A5568;line-height:1.45">The only difference is that one caller passed a filter and the other did not &mdash; and the index had no opinion about it.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">The lesson, stated once</p><p style="font-size:27px;color:#14181F;line-height:1.45"><b>Where a control lives decides who inherits it.</b> In the prompt: a request. In your code: a control for your callers. In the data or the grant: a control for everyone.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">162</p>
+<aside>This is the demonstration the course has been pointing at since Session 3, and it is worth the build-up.
+
+Show the Session 3 result first. Our retriever passed an audience filter, DOC-006 never came back, and we had every reason to believe the internal document was protected. The lab passed. The behaviour was correct.
+
+Then ask the Knowledge Assistant a staff-sounding question about escalation limits, and it answers with the contents of DOC-006 and cites it. Let that land before explaining.
+
+Then be precise about what happened, because the temptation is to call it a leak in Agent Bricks. The index contains a document marked internal. The assistant was granted the index. It retrieved the best match for the question. Every component did its job. The control we thought we had was a parameter in our own calling code.
+
+The bottom bar is the sentence to put on the wall. Three locations, three different reaches: the prompt is a request, your code binds your callers, the data layer and the grant bind everyone. Four separate demonstrations in this course have made the same point, and this is the one people remember.
+
+Likely question: "What should we have done?" Two indexes, or one Unity Catalog function that applies the filter and is the only grant anyone gets. Make the safe path the only path.
+
+Timing: 10 minutes, including the discussion it will start.</aside>
+</section>

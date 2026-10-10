@@ -1,0 +1,41 @@
+<section id="s5-identity" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Same agent, same code, two identities</h2>
+<div style="display:flex;gap:36px">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#FFFFFF;padding:34px;border:1px solid #E3E6EA;border-radius:14px">
+<p style="font-size:29px;font-weight:700;color:#8B0000">agents-labs-full</p>
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:25px;color:#4A5568;line-height:1.5">tools/list &rarr; 3 tools<br>get_order&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK<br>search_policy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK<br>issue_refund&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.4">Answers the refund request end to end.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;background:#14181F;padding:34px;border-radius:14px">
+<p style="font-size:29px;font-weight:700;color:#FF9E64">agents-labs-restricted</p>
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:25px;color:#B8C1CC;line-height:1.5">tools/list &rarr; 2 tools<br>get_order&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK<br>search_policy&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;OK<br><span style="color:#FF8A8A">issue_refund&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;not&nbsp;visible</span></p>
+<p style="font-size:27px;color:#E3E6EA;line-height:1.4">Explains the policy, then says it cannot issue the refund itself.</p>
+</div>
+</div>
+<div style="display:flex;gap:36px">
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:28px 32px;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">Discovery is identity-filtered</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.4">The restricted principal is not refused at call time. The tool <b style="color:#14181F">never appears</b>. There is nothing to jailbreak toward.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:10px;background:#EDF0F3;padding:28px 32px;border-radius:12px">
+<p style="font-size:27px;font-weight:700;color:#8B0000">Definer's rights</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.4">A UC function runs as its owner. The caller needs <span style="font-family:'JetBrains Mono', Courier New, monospace">EXECUTE</span> on the function, not <span style="font-family:'JetBrains Mono', Courier New, monospace">SELECT</span> on the table behind it.</p>
+</div>
+</div>
+<p style="font-size:30px;color:#14181F;line-height:1.45">You did not write a permission check. You wrote a <span style="font-family:'JetBrains Mono', Courier New, monospace">GRANT</span> &mdash; and <b>every client of that schema is bound by it</b>, including the ones you will never see.</p>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">115</p>
+<aside>Lab 5B is the cleanest demonstration in the course, and it takes three minutes to run.
+
+One agent. One notebook. Two tokens. Run it as the full principal and the refund goes through. Swap the token, change nothing else, and the agent degrades gracefully: it looks up the order, quotes the policy, and tells the customer a human will handle the payment.
+
+Draw out why that is better than a refusal. The restricted agent is not fighting its instructions — it genuinely has two tools. tools/list returned two. The model cannot be talked into calling something it was never shown. Compare that with a system prompt saying "do not issue refunds over fifty pounds", which is a request to a text generator.
+
+Definer's rights is the part people miss. The function runs as its owner, so you grant EXECUTE on the function and never SELECT on the table. The agent can look up one order by id and cannot read the orders table. That is the principle of least privilege expressed as a function signature.
+
+Expected question: "How do I do per-end-user permissions, not per-agent?" On-behalf-of-user authentication — the agent acts as the signed-in person and sees exactly their tools. That is the right pattern for an internal assistant; a service principal is the right pattern for an automated flow.
+
+Timing: 5 minutes.</aside>
+</section>

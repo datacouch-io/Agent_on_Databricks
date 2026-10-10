@@ -7,6 +7,13 @@
 
 > **Verified on 2026-09-30**, including the live endpoint. Every number below is from a
 > real run.
+>
+> ⚠️ **Steps 5b, 6b and 7 were added on 2026-10-09 and have *not* been run on a live
+> workspace** — the lab workspace was torn down on 2026-10-06. The parity check and the
+> constant hoisting were tested offline; the deployment, version assertion and the
+> re-evaluation against the endpoint are reviewed code, not measured output. Run them
+> once on a live workspace before teaching from them, and replace the placeholder console
+> blocks with your real numbers.
 
 ---
 
@@ -25,6 +32,9 @@ being better at its job.**
 2. Re-run an evaluation and compare variants.
 3. **Segment a metric by case type**, and explain why an unsegmented mean is unusable here.
 4. Register an agent in Unity Catalog with its `resources`, deploy it, and query it.
+5. **Prove the deployed agent is the agent you evaluated** — by checking its configuration
+   against the notebook's, by asserting the endpoint serves the version you registered,
+   and by re-running the same seven cases through it.
 
 ---
 
@@ -32,7 +42,7 @@ being better at its job.**
 
 | # | File | Where | What it does |
 |---|---|---|---|
-| 1 | **`Lab 6B - Optimize and Deploy`** | Workspace → `Agents-on-Databricks-Labs` | The lab. **22 cells** — 12 explaining, 10 to run. |
+| 1 | **`Lab 6B - Optimize and Deploy`** | Workspace → `Agents-on-Databricks-Labs` | The lab. **30 cells** — 16 explaining, 14 to run. |
 | 2 | [`lab-6b-optimize-and-deploy.ipynb`](../notebooks/lab-6b-optimize-and-deploy.ipynb) | this repo, `notebooks/` | The same notebook with outputs saved. |
 | 3 | **`serving_agent.py`** | *written by cell 16* | The `ResponsesAgent` that gets registered. |
 
@@ -184,6 +194,60 @@ resources=[
 
 ---
 
+### Step 5b — Check parity before you register (6 min)
+
+`serving_agent.py` is a **second implementation** of the agent. Section 2 evaluated the
+one in the notebook; this is the one that will actually serve traffic. Nothing stops them
+drifting apart, and the drift is silent — the model registers, the endpoint reports
+healthy, and the numbers you quote belong to different code.
+
+That is not hypothetical. Until 2026-10-09 this lab's serving agent had **no tool loop at
+all**: no `get_order`, a shortened system prompt and `max_tokens=700`. Evaluation case 4
+is *"What is the status of order ORD-1044?"*, with the guideline *"Must look the order up
+rather than guessing"* — a case the deployed agent could not pass, while the lab quoted
+the notebook's score for it.
+
+Both files now declare the same constants by name:
+
+```python
+RETRIEVAL_K = 2
+MAX_TOKENS  = 800
+MAX_STEPS   = 6
+AUDIENCE    = "customer"
+SYSTEM      = """You are a support agent …"""
+```
+
+The parity cell reads them out of both **without importing or executing** either file —
+`ast.literal_eval` over the module's top-level assignments — compares them, compares the
+tool names, and raises if anything differs.
+
+```console
+  SYSTEM       You are a support agent for an off…            ok
+  RETRIEVAL_K  2                                              ok
+  MAX_TOKENS   800                                            ok
+  MAX_STEPS    6                                              ok
+  AUDIENCE     customer                                       ok
+  CHAT         databricks-claude-sonnet-5                     ok
+
+  tools here   : ['get_order', 'search_policy']
+  tools served : ['get_order', 'search_policy']
+
+  parity ok - the registered agent is the agent you evaluated
+```
+
+> 💡 **Why the serving agent reaches orders differently.** The notebook's `get_order` runs
+> `spark.sql`. A serving container has no `SparkSession`, which is why the original file
+> simply dropped the tool. It now calls the **Unity Catalog function**
+> `get_order_summary` through the managed MCP endpoint from
+> [Lab 5A](../session-5-tools-and-governance/lab-5a-governed-uc-function.md) — the same
+> rows, reached the way a non-Spark caller has to reach them, and the reason
+> `DatabricksFunction(...)` was already in `resources`.
+>
+> **Same data, different transport, identical tool contract.** That is what parity means
+> here — not that the two files are identical, but that the agent's behaviour is.
+
+---
+
 ### Step 6 — Deploy and query (10 min)
 
 Run **cells 10–11**.
@@ -215,6 +279,25 @@ Run **cells 10–11**.
 > explicit decision. Know it exists, check who has `SELECT` on it, and include it in your
 > retention planning.
 
+### Step 6b — Which version is actually serving? (3 min)
+
+`agents.deploy` was *given* a version. That is not proof the endpoint ended up serving it:
+the cell skips deployment when the endpoint already exists, and a config update can still
+be in flight. Read it back.
+
+```python
+e = w.serving_endpoints.get(ENDPOINT_NAME)
+serving_versions = {se.entity_version for se in (e.config.served_entities or [])}
+assert str(info.registered_model_version) in {str(v) for v in serving_versions}
+```
+
+> 🚨 **The skip-if-exists branch is the trap.** Re-run this notebook after changing the
+> agent and it logs a new version, prints *"endpoint already exists — skipping deploy"*,
+> and leaves the **old** version serving. Without this assertion the next section would
+> happily evaluate last week's agent and report it as this week's.
+
+---
+
 **Two things to take from this.**
 
 **The caller got simpler.** No vector-search client, no OpenAI client, no SDK doing
@@ -238,6 +321,45 @@ makes agents fast"** — it means local timings are a poor latency baseline.
 
 ---
 
+### Step 7 — Re-run the evaluation against the deployed agent (12 min)
+
+Everything measured so far ran **in this notebook**. The endpoint is a different process,
+a different identity and a different retrieval client. Parity of source is not parity of
+behaviour.
+
+The only thing that changes is `predict_fn` — the notebook function goes out, an HTTP call
+comes in. Same `CASES`, same scorers, logged to `agents-labs-6-deployed`:
+
+```python
+res_deployed = evaluate(data=CASES, predict_fn=answer_deployed, scorers=[...same six...])
+```
+
+`aggregate()` already reads whichever experiment you name, so the deployed run slots in as
+a third column:
+
+```console
+  metric                                    k=3     k=2  deployed  k2 vs deployed
+  ----------------------------------------------------------------------------------
+  correctness/mean                         1.00    1.00      1.00            same
+  retrieval_relevance/mean                 0.23    0.31      ....            ....
+  …
+```
+
+> 🚨 **Read `k=2` against `deployed`, not against `k=3`.** They are the same configuration.
+> A gap between them is not a tuning result — it is the notebook and the endpoint
+> disagreeing, and that is a defect to chase before you quote either number.
+>
+> Expect small movement on the judged metrics; these are LLM judges and they are not
+> deterministic. A one-case swing is noise. A whole metric collapsing is a finding —
+> `retrieval_relevance` falling to zero, for instance, means the endpoint is not emitting
+> a `RETRIEVER` span and the scorer had nothing to read.
+
+> 💡 **This is what "evaluated" should mean.** Lab 6A measured an agent. Until this step,
+> nothing had measured *the thing serving traffic*. The evaluation you can defend is the
+> one you ran against the endpoint, at the version the endpoint is serving.
+
+---
+
 ## 5. What You Learned
 
 | You saw… | in Step | proof |
@@ -254,11 +376,45 @@ makes agents fast"** — it means local timings are a poor latency baseline.
 | The deployed caller needs no client libraries | 6 | one `POST` |
 | Local timings are a poor latency baseline | 6 | ~6s served vs 10–25s local |
 | The AI Gateway creates an inference table unasked | 6 | `support_agent_payload` |
+| A second implementation drifts silently from the evaluated one | 5b | the serving agent had no `get_order` at all |
+| Constants can be compared without importing either file | 5b | `ast.literal_eval` over top-level assignments |
+| Being *given* a version is not the same as *serving* it | 6b | skip-if-exists leaves the old version live |
+| The endpoint is a different process, so re-measure it there | 7 | `k=2` vs `deployed`, same configuration |
+
+## 5b. Clean up — delete the endpoint you just created
+
+Model Serving scales to zero, so an idle agent endpoint is cheap. **It is not free**, and
+a forgotten endpoint bills for weeks without anyone noticing, because nothing about it
+looks broken.
+
+> ⚠️ **Lab 7B re-uses this deployment** for the canary. If you are running Session 7,
+> leave it up and clean up at the end of 7B instead.
+
+```bash
+# removes the agent deployment and its serving endpoint
+databricks agents delete-deployment agents_labs.retail.support_agent
+```
+
+Confirm it is gone:
+
+```bash
+databricks serving-endpoints list | grep support_agent || echo "no agent endpoint - clean"
+```
+
+> 💡 **The inference table outlives the endpoint.** Deleting the deployment does not
+> delete `agents_labs.retail.support_agent_payload`, the AI Gateway table holding real
+> request and response payloads. It is a governed table containing whatever was typed
+> into your agent — decide deliberately whether to keep it, and who can `SELECT` it.
+
+---
 
 ## 6. What You Hand In
 
 The **segmented** table, not the aggregate — plus one sentence on what you would have
 concluded from cell 6 alone. That sentence is the lab.
+
+Also hand in the **three-column comparison** from Step 7, with one sentence on any metric
+where `k=2` and `deployed` disagree by more than one case.
 
 ---
 

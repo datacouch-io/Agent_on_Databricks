@@ -1,4 +1,4 @@
-# Agents on Databricks — Lab Course
+# Building Agentic AI Systems on Databricks — Lab Course
 
 Fifteen hands-on labs for a seven-session course on building, governing, evaluating and operating AI agents on Databricks, plus a graded offline capstone.
 
@@ -105,6 +105,17 @@ export LAB_GENIE_SPACE=<genie space id>
 
 - **Per session:** two labs, 45–55 minutes each, sized for a 2-hour session with discussion.
 - **Capstone:** ~4 hours offline, self-graded by `capstone/grade.py`, 80/100 to pass.
+
+### Clean up as you go — two things bill while idle
+
+| Lab | What it creates | When to delete it |
+|---|---|---|
+| **3A** | Vector Search index + endpoint | the day Session 3 ends. Billed while it exists, **and for ~24h after deletion** |
+| **6B** | agent serving endpoint | end of 6B, or end of 7B if you are running Session 7 |
+| **7B** | Agent Bricks assistant (+2 endpoints) | end of 7B. **UI only** — delete the agent tile, not the endpoint |
+
+Each of those labs now ends with a *Clean up* section carrying the exact commands.
+`TEARDOWN.md` remains the instructor-level sweep for everything else.
 - **Cost:** the whole course is Foundation Model API calls, one Vector Search endpoint and one small SQL warehouse. No GPU. Steps 6B-5 and 7B-5 add a serving endpoint and an Agent Bricks agent, both billed while they exist.
 - **Instructor prep:** run `tools/check_links.py`, then Lab 1B and Lab 3A, before any cohort. Those two prove auth, the catalog, the index and the model endpoint in about ten minutes.
 

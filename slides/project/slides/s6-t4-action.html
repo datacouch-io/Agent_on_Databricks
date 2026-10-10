@@ -1,0 +1,44 @@
+<section id="s6-t4-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 6B &middot; notebook &middot; set it up before you need it</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: three aliases, one lever</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#7F8C9B"># before promoting anything</span><br>
+c.set_registered_model_alias(<br>
+&nbsp;&nbsp;name=NAME, alias=<span style="color:#A7E8BD">"previous"</span>,<br>
+&nbsp;&nbsp;version=current_champion)<br>
+<br>
+<span style="color:#7F8C9B"># promote the candidate</span><br>
+c.set_registered_model_alias(<br>
+&nbsp;&nbsp;name=NAME, alias=<span style="color:#A7E8BD">"champion"</span>,<br>
+&nbsp;&nbsp;version=challenger)<br>
+<br>
+<span style="color:#7F8C9B"># ... and the way back</span><br>
+c.set_registered_model_alias(<br>
+&nbsp;&nbsp;name=NAME, alias=<span style="color:#A7E8BD">"champion"</span>,<br>
+&nbsp;&nbsp;version=previous)</p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">before:<br>
+&nbsp;&nbsp;champion&nbsp;&nbsp; -&gt; v3<br>
+&nbsp;&nbsp;challenger -&gt; v4<br>
+&nbsp;&nbsp;previous&nbsp;&nbsp; -&gt; v3<br>
+<br>
+after promote:<br>
+&nbsp;&nbsp;champion&nbsp;&nbsp; -&gt; v4<br>
+&nbsp;&nbsp;previous&nbsp;&nbsp; -&gt; v3<br>
+<br>
+after rollback:<br>
+&nbsp;&nbsp;<span style="color:#1F6F43">champion&nbsp;&nbsp; -&gt; v3</span><br>
+<br>
+<span style="color:#1F6F43">no artefact rebuilt</span></p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Clients never changed</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Everything referencing <span style="font-family:'JetBrains Mono', Courier New, monospace">@champion</span> followed the lever. No redeploy, no client update, no coordination.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Rehearse it</p><p style="font-size:27px;color:#14181F;line-height:1.45">Do the rollback once, deliberately, on a day when nothing is wrong. A rollback path you have never executed is a rollback path you do not have.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">147</p>
+<aside>Three calls. The useful thing is the order, so read the comments rather than the code.
+
+Set @previous first, pointing at the current champion. Then move @champion to the challenger. Those two statements mean that at every moment there is a named, known-good version to go back to. Teams routinely do the second without the first and then have to reconstruct which version was good.
+
+The output panel makes the key property visible: after rollback, champion points at v3 again and no artefact was rebuilt. It is the same bytes that were serving traffic an hour ago, not a rebuild that might differ.
+
+The "rehearse it" note is the practice worth insisting on. Run the rollback once on a quiet day. Almost every team's first real rollback is also their first rollback, performed under pressure, and discovers something — a cached client, an alias set on the wrong model name, a permission nobody had. Find that out on a Tuesday afternoon instead.
+
+Likely question: "Should promotion be automated on a metric?" Not initially. Automate the alias mechanics and keep a human on the decision until you trust your evaluation — and Session 6 has just spent forty minutes explaining why you should not trust it yet.
+
+Timing: 3 minutes.</aside>
+</section>

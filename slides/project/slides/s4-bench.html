@@ -1,0 +1,47 @@
+<section id="s4-bench" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">Benchmarks measure it. The agent inherits it.</h2>
+<div style="display:flex;gap:40px">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="font-size:28px;font-weight:700;color:#8B0000">Benchmarks</p>
+<p style="font-size:27px;color:#4A5568;line-height:1.45">Question plus the <b style="color:#14181F">ground-truth SQL</b>. Genie runs both and compares result sets &mdash; not query text.</p>
+<p style="font-size:26px;color:#4A5568;line-height:1.4">So a correct answer written differently still passes. A regression test for a non-deterministic component.</p>
+</div>
+<div style="background:#1E242E;padding:28px;border-radius:14px">
+<p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55">POST /api/2.0/genie/spaces/<br>&nbsp;&nbsp;&nbsp;&nbsp;{space_id}/start-conversation<br>
+<span style="color:#7F8C9B"># poll until COMPLETED, then read</span><br>
+<span style="color:#7F8C9B"># the attachment's query_result</span></p>
+</div>
+<p style="font-size:26px;color:#4A5568;line-height:1.4">On serverless, <span style="font-family:'JetBrains Mono', Courier New, monospace">WorkspaceClient</span> has no <span style="font-family:'JetBrains Mono', Courier New, monospace">.genie</span> attribute. The lab calls the REST API directly.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:12px;background:#14181F;padding:32px 34px;border-radius:14px">
+<p style="font-size:28px;font-weight:700;color:#FF9E64">The result that matters</p>
+<p style="font-size:29px;color:#F2F4F7;line-height:1.45">The agent calls the space over REST. It passes nothing about cancelled orders. It gets the <b>revenue rule applied anyway &mdash; 3 of 3</b>.</p>
+<p style="font-size:27px;color:#B8C1CC;line-height:1.4">The rule lives inside the space, so every caller inherits it. Compare Session 3, where the audience filter lived in our code and the next caller did not.</p>
+</div>
+<div style="display:flex;gap:18px;align-items:center;background:#F6E9E9;padding:26px 30px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0">
+<x-icon name="Warning" style="color:#8B0000;width:44px;height:44px"></x-icon>
+<p style="font-size:26px;color:#14181F;line-height:1.4"><b>Our first inheritance check reported FAIL.</b> It asserted exactly five rows; the instruction it was testing only applies when you ask for a top N. The agent was right. The check was wrong.</p>
+</div>
+</div>
+</div>
+<p style="font-size:30px;color:#14181F;line-height:1.45">Put the rule where the data is, and it travels. <b>Put it in the caller, and it stops at the caller.</b></p>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">99</p>
+<aside>Two ideas, and the second one is the one to leave them with.
+
+Benchmarks first. The reason they work on a non-deterministic component is that they compare result sets, not SQL strings. Genie may legitimately phrase the query five ways; if the rows match the ground truth, it passed. That gives you something genuinely rare in this field: a regression suite you can run after changing an instruction, and a number that means something.
+
+Then the inheritance result. Lab 4B builds an agent whose only tool is the Genie Agent, and asks revenue questions. Nothing in the agent mentions cancelled orders. The exclusion is applied on all three questions. The rule was configured in the space, and the Genie Agent is what executes the query — so every caller gets it, including callers that do not know it exists.
+
+Set that against Session 3. There the audience filter was an argument our retriever passed. Perfect inside the lab, invisible to anything else. In Session 7, an Agent Bricks assistant reads that same index and leaks an internal document. Same platform, opposite outcome, and the only difference is where the control was written.
+
+Mention the broken check honestly — it is the fourth time in building this course that an automated judge was the thing at fault, and the fifth is in Session 6.
+
+Expected question: "Can I version the Knowledge Store?" Treat the instructions and examples as code: keep them in the repo and apply them through the API. The console is for authoring, not for being the source of truth.
+
+Timing: 6 minutes.</aside>
+</section>

@@ -1,0 +1,32 @@
+<section id="s6-t6-how" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">How to reduce latency, in order of safety</h2>
+<div style="display:flex;flex-direction:column;gap:11px"><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">1 &middot; Stream</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">First token immediately. Does not change real latency; changes the experience entirely.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">2 &middot; Parallelise</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Independent tool calls in one turn should run concurrently. Often the biggest real win.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">3 &middot; Shrink input</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Time to first token tracks input length. The context work from Session 1, again.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">4 &middot; Fix the slow tool</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Read span durations. It is usually one tool, and usually not the model.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">5 &middot; Cut steps</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">Coarser tools and clearer descriptions. Two steps instead of four halves the wait.</p></div><div style="display:flex;gap:26px;align-items:center;background:#14181F;padding:24px 30px;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#FF9E64">6 &middot; Change model</p><p style="flex:1;font-size:26px;color:#B8C1CC;line-height:1.35">Last. Measure quality at the same time, or you are guessing.</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#7F8C9B">-- where the time actually goes</span><br>
+<span style="color:#FF9E64">SELECT</span> span_type, name,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#FF9E64">count</span>(*) <span style="color:#FF9E64">AS</span> calls,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="color:#FF9E64">percentile</span>(execution_duration, <span style="color:#A7E8BD">0.95</span>) <span style="color:#FF9E64">AS</span> p95<br>
+<span style="color:#FF9E64">FROM</span> cat.sch.mlflow_experiment_trace_spans<br>
+<span style="color:#FF9E64">GROUP BY</span> span_type, name<br>
+<span style="color:#FF9E64">ORDER BY</span> p95 <span style="color:#FF9E64">DESC</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Run this before you optimise anything</p><p style="font-size:27px;color:#4A5568;line-height:1.45">It names the slow thing. Almost every team that guesses, guesses the model &mdash; and almost every time it is a tool.<br><br>Same table as Session 3. You already have this.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">138</p>
+<aside>Six techniques, ordered by how little they can break.
+
+Streaming is first because it changes nothing real and changes the experience completely. The user sees a first token quickly and stops wondering whether it is working. If you do one thing, do this.
+
+Parallelism is second and it is usually the largest genuine win, because the loop can return several tool calls in one turn and most implementations execute them in sequence out of habit.
+
+Shrinking input is third and it is the context work from Session 1 arriving again — time to first token tracks input length.
+
+Fixing the slow tool is fourth, and the query on this slide is how you find it. Run it before optimising anything. Almost every team that guesses blames the model, and almost every time it is one tool doing something sequential or unindexed.
+
+Cutting steps is fifth: coarser tools and clearer descriptions.
+
+Model change is last, for the same reason as on the cost slide — widest blast radius, easiest to justify badly.
+
+The right-hand panel is the point to land: this needs no new instrumentation. It is the same trace table from Session 3.
+
+Likely question: "Can I stream through a serving endpoint?" Yes, and the agent interface supports it. Worth doing for anything a human waits on.
+
+Timing: 4 minutes.</aside>
+</section>

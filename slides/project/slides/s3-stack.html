@@ -1,0 +1,42 @@
+<section id="s3-stack" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">What is the Databricks AI agent stack?</h2>
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;gap:28px;align-items:center;background:#FFFFFF;padding:28px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:360px;font-size:29px;font-weight:700;color:#8B0000">Foundation Models</p>
+<p style="flex:1;font-size:28px;color:#4A5568;line-height:1.4">Pay-per-token models behind an OpenAI-compatible endpoint. Change <span style="font-family:'JetBrains Mono', Courier New, monospace">MODEL</span>, not your code.</p>
+</div>
+<div style="display:flex;gap:28px;align-items:center;background:#FFFFFF;padding:28px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:360px;font-size:29px;font-weight:700;color:#8B0000">Databricks AI Search</p>
+<p style="flex:1;font-size:28px;color:#4A5568;line-height:1.4">An index that is a Unity Catalog object, synced from a Delta table.</p>
+</div>
+<div style="display:flex;gap:28px;align-items:center;background:#FFFFFF;padding:28px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:360px;font-size:29px;font-weight:700;color:#8B0000">Unity Catalog functions</p>
+<p style="flex:1;font-size:28px;color:#4A5568;line-height:1.4">Tools with signatures, comments and <span style="font-family:'JetBrains Mono', Courier New, monospace">GRANT</span>s. Session 5.</p>
+</div>
+<div style="display:flex;gap:28px;align-items:center;background:#FFFFFF;padding:28px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:360px;font-size:29px;font-weight:700;color:#8B0000">MLflow 3 GenAI</p>
+<p style="flex:1;font-size:28px;color:#4A5568;line-height:1.4">Traces, evaluation, scorers, the model registry and aliases.</p>
+</div>
+<div style="display:flex;gap:28px;align-items:center;background:#FFFFFF;padding:28px 34px;border:1px solid #E3E6EA;border-radius:12px">
+<p style="width:360px;font-size:29px;font-weight:700;color:#8B0000">Model Serving</p>
+<p style="flex:1;font-size:28px;color:#4A5568;line-height:1.4">The agent as an endpoint, with a review app attached. Session 6.</p>
+</div>
+</div>
+<div style="display:flex;gap:20px;align-items:center;background:#14181F;padding:30px 36px;border-radius:14px">
+<x-icon name="Lock" style="color:#FF9E64;width:52px;height:52px"></x-icon>
+<p style="font-size:30px;color:#F2F4F7;line-height:1.4;width:1520px">The table, the index, the tool, the trace and the model are <b>all Unity Catalog objects</b>. One permission model covers retrieval, actions and audit.</p>
+</div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1">
+<div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div>
+<p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">50</p>
+<aside>Resist reading this list out. The single sentence at the bottom is the slide.
+
+Assembling this stack from separate vendors is entirely possible — a hosted model, a vector database, a tracing service, a feature store. What you lose is the shared boundary. Five products means five permission models, and the question "who was allowed to see the document this answer was built from?" becomes a research project.
+
+Here, the index inherits the table's grants. The trace lands in a catalog you control. The tool is a function someone either can or cannot execute. That is the argument for the platform, and it is worth more than any individual component in the list.
+
+Expected question: "Can I bring my own model?" Yes — external models register as serving endpoints and appear through the same interface. Everything in this course works the same way behind them.
+
+Timing: 3 minutes.</aside>
+</section>

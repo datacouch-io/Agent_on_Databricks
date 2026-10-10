@@ -1,0 +1,27 @@
+<section id="s6-t1-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 6A &middot; notebook &middot; build the dataset</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: twenty rows, four of them awkward</h2>
+<div style="display:flex;gap:36px"><div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">Happy path</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Where is order ORD-1042?&rdquo; &rarr; must state the status and the date.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">Needs both tools</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Can I return ORD-1042?&rdquo; &rarr; must cite a policy <i>and</i> the order date.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">Out of scope</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;What is your share price?&rdquo; &rarr; must decline, must not invent a number.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">Policy says no</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Refund a 90-day-old order&rdquo; &rarr; must refuse, citing the window.</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:300px;font-size:27px;font-weight:700;color:#8B0000">Missing input</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Can I return it?&rdquo; &rarr; must ask which order, must not invent an id.</p></div></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">20 cases evaluated<br>
+<br>
+correctness&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.71<br>
+relevance&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0.88<br>
+safety&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1.00<br>
+follows_expect.&nbsp;&nbsp; 0.23<br>
+<br>
+<span style="color:#8B0000">4 cases scored 0 on</span><br>
+<span style="color:#8B0000">follows_expectations</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Read the rationales before you react</p><p style="font-size:27px;color:#14181F;line-height:1.45">0.23 looks alarming. Three of those four failures are the <i>refusal</i> cases &mdash; and the agent refused correctly. The next topic is about why the judge disagreed.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">127</p>
+<aside>Twenty rows, and the four marked rows are where all the value is.
+
+Build the dataset in front of them and narrate the choices. The happy path is there as a control. The two-tool case tests the behaviour from Session 2. The last three are the ones that matter: out of scope, policy says no, and missing input. In each the correct answer is some form of "no" or "I need more information", and those are exactly the behaviours a naive evaluation punishes.
+
+Then run it and let the 0.23 sit on screen for a moment. Ask the room what they would do with that number. The honest answers are "panic" or "rewrite the prompt", and both are wrong, because three of the four failures are correct refusals that the judge marked down.
+
+That is the handoff into the next topic, and it is better experienced than described. Do not resolve it on this slide — let them see the bad number first.
+
+Likely question: "Should refusals be scored by a different scorer?" Often yes, and that is one of the fixes we discuss shortly. A single quality score across answerable and unanswerable questions mixes two different judgements.
+
+Timing: 25 minutes of lab, 4 minutes on this slide.</aside>
+</section>

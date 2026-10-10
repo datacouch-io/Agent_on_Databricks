@@ -1,5 +1,5 @@
 """
-Shared helpers for the Agents on Databricks labs.
+Shared helpers for the Building Agentic AI Systems on Databricks labs.
 
 Works in two places without changes:
   * a Databricks notebook  — picks up the notebook's own credentials

@@ -1,0 +1,34 @@
+<section id="s3-t2-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Every notebook &middot; cell 1</p>
+<h2 style="font-size:60px;font-weight:600;line-height:1.1">See it in action: two lines to point at Databricks</h2>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55"><span style="color:#FF9E64">from</span> openai <span style="color:#FF9E64">import</span> OpenAI<br>
+<span style="color:#FF9E64">from</span> databricks.sdk <span style="color:#FF9E64">import</span> WorkspaceClient<br>
+<br>
+w = WorkspaceClient()<br>
+client = OpenAI(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;base_url=<span style="color:#A7E8BD">f"{w.config.host}/serving-endpoints"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;api_key=w.config.token,<br>
+)<br>
+MODEL = <span style="color:#A7E8BD">"databricks-claude-sonnet-5"</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Expected output</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">running as: you@company.com<br>
+host&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; : https://adb-....<br>
+model&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: databricks-claude-sonnet-5<br>
+<br>
+<span style="color:#1F6F43">ok - endpoint reachable</span></p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">The only Databricks-specific lines in the agent</p><p style="font-size:27px;color:#4A5568;line-height:1.45">And they are in the notebook, not in <span style="font-family:'JetBrains Mono', Courier New, monospace">core.py</span>. The client is constructed outside the seam and passed in.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#F6E9E9;padding:30px 34px;border-left:8px solid #8B0000;border-radius:0 12px 12px 0"><p style="font-size:28px;font-weight:700;color:#8B0000">Notebook gotcha</p><p style="font-size:27px;color:#14181F;line-height:1.45">Cell 0 must be <span style="font-family:'JetBrains Mono', Courier New, monospace">%pip install -q openai</span> followed by <span style="font-family:'JetBrains Mono', Courier New, monospace">dbutils.library.restartPython()</span>. Serverless has no OpenAI client pre-installed, and the install needs a restart to take effect.</p></div></div>
+<div style="display:flex;gap:24px;align-items:center;background:#EDF0F3;padding:30px 36px;border-radius:14px"><x-icon name="Lightbulb" style="color:#8B0000;width:52px;height:52px"></x-icon><div style="flex:1;display:flex;flex-direction:column;gap:8px"><p style="font-size:29px;color:#14181F;line-height:1.42">You may also see a Pydantic serializer warning on first call. It is harmless and noisy; the labs suppress it with a filtered warning and a comment explaining why, rather than hiding it silently.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">54</p>
+<aside>Six lines, and they are the same six lines in every notebook in the course. Worth putting on screen once so nobody wonders where the client came from later.
+
+The WorkspaceClient is doing one job here: handing you the host and a token so you do not paste credentials into a notebook. In a job or a serving endpoint it resolves those from the environment automatically.
+
+Read the white panel aloud, because it closes the loop on Session 2. Two Databricks-specific lines exist, and they are in the notebook that constructs the client, not in the agent. core.py receives a configured client and a retriever and knows nothing about either.
+
+Repeat the pip gotcha. It is the single most common first-ten-minutes failure in this course and the error message — ModuleNotFoundError: No module named 'openai' — points at a line that is perfectly correct.
+
+The Pydantic warning is worth mentioning so nobody files a bug. We suppress it with an explanatory comment rather than a bare filter, because an unexplained warning filter is how real problems get hidden two years later.
+
+Likely question: "Does this work outside a notebook?" Yes — in a job, a serving endpoint or locally with a configured profile. Same code; the SDK resolves credentials differently.
+
+Timing: 2 minutes.</aside>
+</section>

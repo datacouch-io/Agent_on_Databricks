@@ -1,0 +1,33 @@
+<section id="s4-t2-action" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<p style="font-size:26px;font-weight:700;color:#8B0000;letter-spacing:3px;text-transform:uppercase">Lab 4A &middot; console &middot; Knowledge Store</p>
+<h2 style="font-size:58px;font-weight:600;line-height:1.1">See it in action: four tabs, three entries, one measurable change</h2>
+<div style="display:flex;gap:36px"><div style="display:flex;flex-direction:column;gap:14px"><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:230px;font-size:27px;font-weight:700;color:#8B0000">About</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Retail order and customer data for the UK store. One row per order.&rdquo;</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:230px;font-size:27px;font-weight:700;color:#8B0000">Sources</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35"><span style="font-family:'JetBrains Mono', Courier New, monospace">main.retail.orders</span>, <span style="font-family:'JetBrains Mono', Courier New, monospace">main.retail.customers</span></p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:2px solid #8B0000;border-radius:12px"><p style="width:230px;font-size:27px;font-weight:700;color:#8B0000">Instructions</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Revenue excludes orders with status <i>cancelled</i>.&rdquo;<br>&ldquo;Exclude customers whose email ends <i>@example.test</i> &mdash; they are test accounts.&rdquo;</p></div><div style="display:flex;gap:26px;align-items:center;background:#FFFFFF;padding:24px 30px;border:1px solid #E3E6EA;border-radius:12px"><p style="width:230px;font-size:27px;font-weight:700;color:#8B0000">Examples</p><p style="flex:1;font-size:26px;color:#4A5568;line-height:1.35">&ldquo;Top 5 customers by spend&rdquo; &rarr; the exact SQL, with the join and the exclusion.</p></div></div></div>
+<div style="display:flex;gap:28px"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">Before</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">Q: top customers by spend<br>
+<span style="color:#8B0000">-&gt; includes 2 test accounts</span><br>
+<span style="color:#8B0000">-&gt; includes cancelled orders</span><br>
+<br>
+Q: revenue last month<br>
+<span style="color:#8B0000">-&gt; 184,220.00</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#8B0000">After</p><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#4A5568;line-height:1.5">Q: top customers by spend<br>
+<span style="color:#1F6F43">-&gt; real customers only</span><br>
+<span style="color:#1F6F43">-&gt; cancelled excluded</span><br>
+<br>
+Q: revenue last month<br>
+<span style="color:#1F6F43">-&gt; 171,905.00</span></p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">What changed</p><p style="font-size:27px;color:#4A5568;line-height:1.45">No code. No deployment. Three Knowledge Store entries, and two whole classes of wrong answer stopped occurring &mdash; for every caller of this space.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">85</p>
+<aside>Walk the four tabs in order, because the order is also the priority.
+
+About is one or two sentences and people skip it. Do not — it is how the model knows the grain of the table. "One row per order" prevents a surprising amount of nonsense.
+
+Sources is the security boundary. Say explicitly that this is not a hint; tables outside the space are not reachable.
+
+Instructions is where the business lives, and the second one on the slide is the under-rated kind: excluding test accounts. Almost every warehouse has them, almost nobody documents them, and they quietly distort every customer-level answer.
+
+Examples is where you spend your effort for anything with a join.
+
+Then show the before-and-after. Two classes of defect eliminated with three entries and no deployment. That is the slide's argument, and the "for every caller" clause is the one that matters when Lab 4B arrives.
+
+Likely question: "Should this live in the console or in version control?" Author in the console, keep the source of truth in your repository, apply through the API. Treat instructions and examples as code — they change behaviour and they deserve review.
+
+Timing: 10 minutes alongside the build.</aside>
+</section>

@@ -1,0 +1,31 @@
+<section id="s3-t3-how" data-transition="fade" style="background:#FBFBF8;color:#14181F;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:34px">
+<div style="position:absolute;right:0;top:0;width:12px;height:1080px;background:#8B0000;opacity:0.5"></div>
+<h2 style="font-size:64px;font-weight:600;line-height:1.1">How a Delta Sync index stays current</h2>
+<div style="display:flex;gap:22px;align-items:center"><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">1 &middot; Delta table</p><p style="font-size:24px;color:#4A5568;line-height:1.35">primary key, Change Data Feed on</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">2 &middot; Sync</p><p style="font-size:24px;color:#4A5568;line-height:1.35">TRIGGERED on demand, or CONTINUOUS</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">3 &middot; Embed</p><p style="font-size:24px;color:#4A5568;line-height:1.35">the named text column, by the managed model</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:28px;border:1px solid #E3E6EA;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#14181F">4 &middot; Index</p><p style="font-size:24px;color:#4A5568;line-height:1.35">a UC object on an AI Search endpoint</p></div><x-shape kind="arrow-right" style="background:#8B0000;width:76px;height:36px"></x-shape><div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#14181F;padding:28px;border-radius:12px"><p style="font-size:26px;font-weight:700;color:#F2F4F7">5 &middot; Search</p><p style="font-size:24px;color:#B8C1CC;line-height:1.35">query text in, ranked rows out</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;background:#1E242E;padding:30px;border-radius:14px;display:flex;flex-direction:column;gap:10px"><p style="font-family:'JetBrains Mono', Courier New, monospace;font-size:24px;color:#C5CFD9;line-height:1.55">client.create_delta_sync_index(<br>
+&nbsp;&nbsp;endpoint_name=ENDPOINT,<br>
+&nbsp;&nbsp;index_name=INDEX_NAME,<br>
+&nbsp;&nbsp;source_table_name=TABLE,<br>
+&nbsp;&nbsp;pipeline_type=<span style="color:#A7E8BD">"TRIGGERED"</span>,<br>
+&nbsp;&nbsp;primary_key=<span style="color:#A7E8BD">"doc_id"</span>,<br>
+&nbsp;&nbsp;embedding_source_columns=[{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#A7E8BD">"name"</span>: <span style="color:#A7E8BD">"text"</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#A7E8BD">"embedding_model_endpoint_name"</span>:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#A7E8BD">"databricks-gte-large-en"</span>}],<br>
+)</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:30px 34px;border-radius:12px;border:1px solid #E3E6EA"><p style="font-size:28px;font-weight:700;color:#8B0000">Three decisions encoded in that call</p><p style="font-size:27px;color:#4A5568;line-height:1.45"><b>Which column is embedded</b> &mdash; only that text is searchable.<br><br><b>Which columns are carried</b> &mdash; anything you want to filter on must be in the index.<br><br><b>How it stays current</b> &mdash; triggered, or continuous and warm.</p></div></div>
+<div style="display:flex;gap:36px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EDF0F3;padding:30px 34px;border-radius:12px"><p style="font-size:28px;font-weight:700;color:#8B0000">Creation is asynchronous</p><p style="font-size:27px;color:#4A5568;line-height:1.45">The call returns before the index is ready. The lab polls until status is ONLINE.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EDF0F3;padding:30px 34px;border-radius:12px"><p style="font-size:28px;font-weight:700;color:#8B0000">Adding a document</p><p style="font-size:27px;color:#4A5568;line-height:1.45">Insert into the Delta table, trigger a sync, search again. No other step.</p></div></div>
+<hr style="position:absolute;left:128px;bottom:96px;width:1664px;border-top:1px solid #D9DCE1"><div style="position:absolute;left:128px;bottom:92px;width:56px;height:6px;background:#14181F"></div><p style="position:absolute;left:1716px;bottom:68px;width:76px;font-size:24px;font-weight:600;color:#FBFBF8;background:#8B0000;padding:6px 0;text-align:center">60</p>
+<aside>Walk the five boxes, then spend the time on the right-hand panel, because those three decisions are the ones you cannot easily change later.
+
+Only the column you name gets embedded. If your searchable meaning lives in two columns — a title and a body — concatenate them upstream in the table or you will be searching half your corpus.
+
+The second decision is the one people discover painfully: filters can only use columns the index carries. Decide your filter dimensions when you create the index, not when you first need them.
+
+The asynchronous note matters for anyone scripting this. create returns immediately and the index is not usable yet; the lab polls status until ONLINE and prints progress. Without the wait loop the first search fails confusingly.
+
+Demonstrate the add-a-document cycle live if time allows: insert a row, trigger the sync, search for its content. Three statements, and it is the whole document lifecycle. That is the moment the "subscription, not a copy" idea becomes concrete.
+
+Likely question: "Can I use my own embeddings?" Yes — a self-managed index takes a vector column you compute. You then own the embedding job, which is exactly the thing managed embeddings removed.
+
+Timing: 4 minutes.</aside>
+</section>
